@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>tsks</title>
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        font-family: sans-serif;
+        background: #E3E1EC;
+      }
+      
+      ul {
+        list-style: none;
+        padding-inline-start: 20px;
+      }
+
+      nav {
+        background: #F9F9FB;
+        padding-top: 25px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        /*scrollbar-gutter: stable;
+        min-width: 200px;*/
+        flex-grow: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+        resize: horizontal;
+      }
+
+      nav h1 {
+        margin: 0;
+        padding-left: 10px;
+      }
+
+      nav section {
+        background: #EBEAF0;
+        margin: 10px;
+        padding: 10px 0 10px 0;
+        border-radius: 15px;
+      }
+
+      nav section h1 {
+        font-size: 1em;
+        color: #7E7D87;
+        padding: 5px 0 5px 15px;
+      }
+
+      nav ul {
+        margin: 0;
+        padding: 0;
+      }
+
+      nav ul li {
+        padding: 5px 15px 5px 15px;
+      }
+
+      nav ul li:hover {
+        background: #5d5a8c19;
+      }
+
+      main {
+        padding: 15px;
+        /*width: 100%;*/
+        flex-grow: 17;
+        color: #1A1929;
+        min-width: 340px;
+      }
+
+      main section {
+        background: #F9F9FB;
+        border-radius: 15px;
+        padding: 25px;
+        font-size: 1.25em;
+      }
+
+      main section h1 {
+        font-size: 2.5em;
+        margin: 0;
+      }
+
+      main section h2 {
+        margin: 0;
+        margin-top: 10px;
+      }
+
+      main section > ul {
+        margin: 0;
+        margin-left: .65em;
+        border-left: #C9C8D0 1px solid;
+      }
+
+      main section header {
+        min-height: 36px;
+      }
+
+      main section li {
+        padding-top: 7px;
+      }
+
+      .lighter {
+        opacity: .25;
+      }
+
+      .badge {
+        font-size: .5em;
+        border: gray 1px solid;
+        border-radius: 15px;
+        margin-left: 10px;
+        padding: 2px 7px 2px 7px;
+        vertical-align: middle;
+        color: #838288;
+        font-weight: lighter;
+        background-color: inherit;
+      }
+
+      .badge.interactive:hover {
+        background-color: #e9e7ef;
+        cursor: pointer;
+      }
+
+      .overdue {
+        color: #F05D54;
+      }
+
+      aside {
+        background: url("https://images8.alphacoders.com/992/992848.jpg") no-repeat center center fixed;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;
+        width: 300px;
+        margin: 15px 15px 15px 0;
+        border-radius: 15px;
+      }
+
+      input[type="search"] {
+        border: none;
+        background: #EBEAF0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E") no-repeat 13px center;
+        border-radius: 15px;
+        padding: 10px 15px 10px 40px;
+        margin: 10px;
+        font-size: .8em;
+      }
+
+      input[type="search"]::before {
+        content: "🔍";
+      }
+      
+      .btn-add-category {
+        border: none;
+        border-radius: 15px;
+        padding: 10px 15px 10px 40px;
+        font-weight: bold;
+        margin: 10px;
+        color: #7E7D87;
+        font-size: 1em;
+        /* https://www.svgbackgrounds.com/tools/svg-to-css/ */
+        background: #EBEAF0 url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 13px center;
+      }
+
+      .btn-add-category:hover {
+        background-color: #dedce4;
+      }
+
+      input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      /*input[type="checkbox"] {
+        appearance: none;
+        background-color: #fff;
+        margin: 0;
+        font: inherit;
+        color: currentColor;
+        width: 24px;
+        height: 24px;
+        border: 2px solid #D9D9D9;
+        border-radius: 7px;
+        transform: translateY(-0.075em);
+      }*/
+
+      .icon {
+        margin-right: 10px;
+        cursor: pointer;
+      }
+
+      .btn-add-section {
+        float: right;
+        border: none;
+        /* https://www.svgbackgrounds.com/tools/svg-to-css/ */
+        background: #EBEAF0 url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 0 center;
+        width: 24px;
+        height: 24px;
+        margin-right: 10px;
+        transform: translateY(-3px);
+        border-radius: 7px;
+        display: none;
+      }
+
+      .btn-add-section:hover {
+        background-color: #dbd9e3;
+      }
+
+      section:hover .btn-add-section {
+        display: initial;
+      }
+
+      .btn-toggle-folding {
+        border: none;
+        font-size: .8em;
+        cursor: pointer;
+        min-width: 1.5em;
+        display: inline-block;
+      }
+
+      /* can't stop propagation in css => javascript needed */
+      /* main li:hover {
+        background-color: #dbd9e3;
+      } */
+
+      :target {
+        background-color: #ceccd7;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <input type="search" placeholder="Rechercher"/>
+      <ul>
+        <li><span class="icon">📫</span>Boîte de réception</li>
+        <li><span class="icon">📆</span>Aujourd'hui</li>
+        <li><span class="icon">🔥</span>Urgent</li>
+        <li><span class="icon">🎯</span>Important</li>
+      </ul>
+      <section>
+        <h1><span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>Travail<button class="btn-add-section" onclick="action.newSection(this)"></button></h1>
+        <ul>
+          <li><span class="icon">🎓</span>Post-doc</li>
+          <li><span class="icon">💼</span>Job</li>
+        </ul>
+      </section>
+      <section>
+        <h1><span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>Personnel<button class="btn-add-section" onclick="action.newSection(this)"></button></h1>
+        <ul>
+          <li><span class="icon">🏛</span>Administratif</li>
+          <li><span class="icon">🕶</span>XR</li>
+          <li><span class="icon">🕹</span>Divertissements</li>
+          <li><span class="icon">🏖</span>Vacances</li>
+        </ul>
+      </section>
+      <section>
+       <h1><span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>Médiéval<button class="btn-add-section" onclick="action.newSection(this)"></button></h1>
+        <ul>
+          <li><span class="icon">🏰</span>HDMO</li>
+          <li><span class="icon">🗡</span>AMHE</li>
+        </ul>
+      </section>
+      <button class="btn-add-category" onclick="action.category.create(this)">Nouvelle catégorie</button>
+    </nav>
+    <main>
+      <section>
+        <header></header>
+        <h1 class="title">XR</h1>
+        <h2>
+          <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
+        </h2>
+        
+        <input type="checkbox" />News (RSS Reader, Twitter, Weather)
+        <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
+        <ul>
+          <li>
+            <input type="checkbox" />News (RSS Reader, Twitter, Weather)
+            <ul>
+              <li><input type="checkbox" />Mails</li>
+              <li><input type="checkbox" />Messages</li>
+            </ul>
+          </li>
+          <li><input type="checkbox" />Calendar</li>
+        </ul>
+      
+        <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
+        <ul>
+          <li>
+            <input type="checkbox" />News (RSS Reader, Twitter, Weather)
+            <ul>
+              <li><input type="checkbox" />Mails</li>
+              <li><input type="checkbox" />Messages</li>
+            </ul>
+          </li>
+          <li><input type="checkbox" />Calendar</li>
+        </ul>
+      </main>
+    </section>
+    <aside></aside>
+
+    <!-- Templates -->
+    <template id="t-category">
+      <section id="c{{id}}">
+        <h1>
+          <span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>
+          <span class="title" contenteditable="true" oninput="action.category.update(event)">{{title}}</span>
+          <button class="btn-add-section" onclick="action.section.create(this);"></button>
+        </h1>
+        <ul>
+          <!-- sections -->
+        </ul>
+      </section>
+    </template>
+    <template id="t-section">
+      <li id="s{{id}}" onclick="action.section.select(this)">
+        <span class="icon">{{icon}}</span>
+        <span class="title" contenteditable="true" oninput="action.section.update(event)">{{title}}</span>
+      </li>
+    </template>
+    <template id="t-task">
+      <li id="t{{id}}" class="task">
+          <input type="checkbox" onclick="action.task.onChecked(this)" />
+          <span class="title" contenteditable="true">{{title}}</span>
+      </li>
+    </template>
+    <template id="t-main">
+      <section>
+        <header></header>
+        <h1 class="title" contenteditable="true">{{title}}</h1>
+        <h2>
+          <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
+        </h2>
+        
+        <!-- groups -->
+      </section>
+    </template>
+    <template id="t-group">
+      <div class="group">
+        <h2>
+          <button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>
+          <span class="title" contenteditable="true">{{title}}</span>
+          <span class="badge">0/6</span>
+        </h2>
+        <ul>
+          <li>
+            <input type="checkbox" />News (RSS Reader, Twitter, Weather)
+            <ul>
+              <li><input type="checkbox" />Mails</li>
+              <li><input type="checkbox" />Messages</li>
+            </ul>
+          </li>
+          <li><input type="checkbox" />Calendar</li>
+        </ul>
+      </div>
+    </template>
+
+    <script>
+      // Load data (local-first, webdav compatible, gun db? maybe only for public sharing...)
+      const TYPE = {
+        CATEGORY: 'c',
+        SECTION: 's',
+        GROUP: 'g',
+        TASK: 't',
+      }
+      const store = {
+        local: {
+          get: (key) => JSON.parse(localStorage.getItem(key)),
+          set: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+          all: (type) => {
+            const arr = [];
+            for (var i=0; i<localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key.startsWith(type))
+                arr.push(store.local.get(key));
+            }
+            return arr;
+          },
+          nextId: (type) => {
+            const arr = store.local.all(type);
+            return Math.max(0, ...arr.map(o => o.id))+1;
+          }
+        },
+        remote: {
+
+        }
+      }
+      store.current = store.local;
+
+      const db = {
+        category: {
+          create: async () => {
+            // TODO new file on webdav
+            const data = { id:store.current.nextId(TYPE.CATEGORY), title:'Catégorie' };
+            store.current.set('c'+data.id, data);
+            return data;
+          },
+          update: async (id, key, value) => {
+            const data = store.current.get(id);
+            data[key] = value;
+            store.current.set(id, data);
+          }
+        },
+        section: {
+          create: async () => {
+            // TODO new h2 on file
+            const data = { id:store.current.nextId(TYPE.SECTION), title:'Section', icon:'📁' };
+            store.current.set('s'+data.id, data);
+            return data;
+          },
+          select: async (id) => {
+            return store.current.get(id);
+          },
+          update: async (id, key, value) => {
+            const data = store.current.get(id);
+            data[key] = value;
+            store.current.set(id, data);
+          }
+        },
+        group: {
+          create: async () => {
+            // TODO new h3 on file
+          }
+        },
+        task: {}
+      };
+
+      const nav = document.querySelector('nav');
+      const main = document.querySelector('main');
+      const categoryTemplate = document.querySelector('#t-category');
+      const sectionTemplate = document.querySelector('#t-section');
+      const taskTemplate = document.querySelector('#t-task');
+      const create = (template) => {
+        return (data) => {
+          const clone = template.cloneNode(true);
+          Object.entries(data).forEach(([key, value]) => {
+            clone.innerHTML = clone.innerHTML.replaceAll('{{'+key+'}}', value); // TODO replaceAll polyfill
+          });
+          return clone.content.firstElementChild;
+        };
+      };
+      const ui = {
+        category: {
+          create: create(categoryTemplate),
+          update: () => {}
+        },
+        section: {
+          create: create(sectionTemplate),
+          select: (data) => {
+            // TODO update main
+            console.log(main.querySelector('.title'))
+            main.querySelector('.title').textContent = data.title;
+          },
+          update: (data) => {
+            if (location.href.includes('#s'+data.id)) { // selected
+              main.querySelector('.title').textContent = data.title;
+            }
+          }
+        }
+      };
+
+      const action = {
+        category: {
+          create: async (e) => {
+            const data = await db.category.create();
+            const category = ui.category.create(data);
+            e.parentNode.insertBefore(category, e); // insert before add category button
+            category.querySelector('.title').focus(); // auto focus title for editing
+            selectElementContents(category.querySelector('.title')); // all text is selected
+          },
+          update: async (e) => {
+            const target = e.target;
+            if (target.classList.contains('title')) {
+              db.category.update(target.closest('section').id, 'title', target.textContent);
+            }
+          }
+        },
+        section: {
+          create: async (e) => {
+            const data = await db.section.create();
+            const section = ui.section.create(data);
+            e.closest('section').querySelector('ul').appendChild(section); // append li at the end of ul
+            section.querySelector('.title').focus(); // auto focus title for editing
+            selectElementContents(section.querySelector('.title')); // all text is selected
+          },
+          select: async (e) => {
+            if (location.href.includes('#'+e.id)) return; // already selected
+            location.href = '#'+e.id;
+            const data = await db.section.select(e.id);
+            ui.section.select(data);
+          },
+          update: async (e) => {
+            const target = e.target;
+            if (target.classList.contains('title')) {
+              const sid = target.closest('li').id;
+              db.section.update(sid, 'title', target.textContent);
+              ui.section.update(await db.section.select(sid));
+            }
+          }
+        },
+        filter: (e) => {},
+        // search
+        toggleFolding: (e) => {
+          // hide next ul element
+          const nextUlElement = e.parentElement.nextElementSibling;
+          nextUlElement.style.display = nextUlElement.style.display === 'none' ? null : 'none';
+
+          // change icon
+          e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
+        },
+      }
+
+      function load() {
+
+      }
+      // Setup nav
+      // Setup main
+      // Enable edition
+
+      // Helpers
+      function selectElementContents(el) {
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      function insertAfter(newNode, referenceNode) {
+        referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+      }
+    </script>
+  </body>
+</html>
