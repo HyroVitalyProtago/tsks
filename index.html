@@ -2,7 +2,41 @@
 <html>
   <head>
     <title>tsks</title>
+    <!-- <script type="text/javascript" src="webdav.js"></script> -->
+    <script type="text/javascript" src="webdav2.js"></script>
+    <script type="text/javascript" src="js-yaml.min.js"></script>
     <style>
+      :root{
+        /* scrollbar-face-color: rgb(210,210,210);
+        scrollbar-track-color: rgb(46,54,69);
+        scrollbar-color: rgba(0,0,0,.4) rgba(140,140,140,0.1);
+        scrollbar-width: thin; */
+      }
+    
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background-color: #202124; /* black */
+          --nav-background-color: #31343a;
+          --nav-section-background-color: #222428;
+          --section-background-color: var(--nav-background-color);
+          --text-color: 242, 234, 234;
+          --border-color: #5f6368;
+          --search-background: var(--nav-background-color);
+        }
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --background-color: #E3E1EC;
+          --nav-background-color: #F9F9FB;
+          --nav-section-background-color: #EBEAF0;
+          --section-background-color: var(--nav-background-color);
+          --text-color: #1A1929;
+          --border-color: #ddd;
+          --search-background: #EBEAF0;
+        }
+      }
+
       html, body {
         width: 100%;
         height: 100%;
@@ -10,7 +44,8 @@
         padding: 0;
         display: flex;
         font-family: sans-serif;
-        background: #E3E1EC;
+        background: var(--background-color);
+        color: rgb(var(--text-color));
       }
       
       ul {
@@ -19,7 +54,7 @@
       }
 
       nav {
-        background: #F9F9FB;
+        background: var(--nav-background-color);
         padding-top: 25px;
         overflow-x: hidden;
         overflow-y: auto;
@@ -38,7 +73,7 @@
       }
 
       nav section {
-        background: #EBEAF0;
+        background: var(--nav-section-background-color);
         margin: 10px;
         padding: 10px 0 10px 0;
         border-radius: 15px;
@@ -46,7 +81,8 @@
 
       nav section h1 {
         font-size: 1em;
-        color: #7E7D87;
+        /* color: #7E7D87; */
+        opacity: .6;
         padding: 5px 0 5px 15px;
       }
 
@@ -67,12 +103,12 @@
         padding: 15px;
         /*width: 100%;*/
         flex-grow: 17;
-        color: #1A1929;
+        /* color: #1A1929; */
         min-width: 340px;
       }
 
       main section {
-        background: #F9F9FB;
+        background: var(--section-background-color);
         border-radius: 15px;
         padding: 25px;
         font-size: 1.25em;
@@ -91,7 +127,7 @@
       main section > ul {
         margin: 0;
         margin-left: .65em;
-        border-left: #C9C8D0 1px solid;
+        border-left: rgba(var(--text-color), 0.8) 1px solid;
       }
 
       main section header {
@@ -113,7 +149,7 @@
         margin-left: 10px;
         padding: 2px 7px 2px 7px;
         vertical-align: middle;
-        color: #838288;
+        color: rgba(var(--text-color), 0.6);
         font-weight: lighter;
         background-color: inherit;
       }
@@ -140,7 +176,7 @@
 
       input[type="search"] {
         border: none;
-        background: #EBEAF0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E") no-repeat 13px center;
+        background: var(--search-background) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E") no-repeat 13px center;
         border-radius: 15px;
         padding: 10px 15px 10px 40px;
         margin: 10px;
@@ -160,7 +196,8 @@
         color: #7E7D87;
         font-size: 1em;
         /* https://www.svgbackgrounds.com/tools/svg-to-css/ */
-        background: #EBEAF0 url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 13px center;
+        background: var(--nav-section-background-color) url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 13px center;
+        order: 9999; /* TODO Better ? */
       }
 
       .btn-add-category:hover {
@@ -193,7 +230,7 @@
         float: right;
         border: none;
         /* https://www.svgbackgrounds.com/tools/svg-to-css/ */
-        background: #EBEAF0 url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 0 center;
+        background: var(--nav-section-background-color) url("data:image/svg+xml,%3Csvg width='24' height='27' viewBox='0 0 24 27' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect opacity='0.4' x='1' y='2.5' width='22' height='22' rx='7' stroke='%23747379' stroke-width='2'/%3E%3Cpath opacity='0.4' d='M17.8519 12.041V15.215H6.14488V12.041H17.8519ZM13.5969 19.47H10.4229V7.763H13.5969V19.47Z' fill='%23747379'/%3E%3C/svg%3E") no-repeat 0 center;
         width: 24px;
         height: 24px;
         margin-right: 10px;
@@ -216,6 +253,8 @@
         cursor: pointer;
         min-width: 1.5em;
         display: inline-block;
+        background: none;
+        color: var(--text-color);
       }
 
       /* can't stop propagation in css => javascript needed */
@@ -226,9 +265,32 @@
       :target {
         background-color: #ceccd7;
       }
+
+      input[type="text"] {
+        border: none;
+        background: none;
+        color: inherit;
+        font: inherit;
+        /* width: 100px; TODO */
+      }
+
+      .strike {
+        --thickness: .1em;
+        --strike: 0;
+        
+        background: linear-gradient(90deg, transparent, currentColor 0) no-repeat left center / calc(var(--strike) * 100%) var(--thickness) !important;
+        transition: background-size .4s ease;
+        /* background-position-x: left; */
+      }
+
+      .strike:hover {
+        --strike: 1;
+        
+      }
     </style>
   </head>
   <body>
+    <webdav-form></webdav-form>
     <nav>
       <input type="search" placeholder="Rechercher"/>
       <ul>
@@ -237,7 +299,7 @@
         <li><span class="icon">🔥</span>Urgent</li>
         <li><span class="icon">🎯</span>Important</li>
       </ul>
-      <section>
+      <!-- <section>
         <h1><span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>Travail<button class="btn-add-section" onclick="action.newSection(this)"></button></h1>
         <ul>
           <li><span class="icon">🎓</span>Post-doc</li>
@@ -259,18 +321,18 @@
           <li><span class="icon">🏰</span>HDMO</li>
           <li><span class="icon">🗡</span>AMHE</li>
         </ul>
-      </section>
+      </section> -->
       <button class="btn-add-category" onclick="action.category.create(this)">Nouvelle catégorie</button>
     </nav>
     <main>
       <section>
         <header></header>
-        <h1 class="title">XR</h1>
+        <h1><input type="text" class="title" value="XR" size="10" /></h1>
         <h2>
           <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
         </h2>
         
-        <input type="checkbox" />News (RSS Reader, Twitter, Weather)
+        <input type="checkbox" /><input type="text" value="News (RSS Reader, Twitter, Weather)" style="width: 80%;"/>
         <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
         <ul>
           <li>
@@ -303,7 +365,7 @@
       <section id="c{{id}}">
         <h1>
           <span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>
-          <span class="title" contenteditable="true" oninput="action.category.update(event)">{{title}}</span>
+          <input type="text" class="title" oninput="action.category.update(event)" value="{{title}}" size="10"/>
           <button class="btn-add-section" onclick="action.section.create(this);"></button>
         </h1>
         <ul>
@@ -314,19 +376,19 @@
     <template id="t-section">
       <li id="s{{id}}" onclick="action.section.select(this)">
         <span class="icon">{{icon}}</span>
-        <span class="title" contenteditable="true" oninput="action.section.update(event)">{{title}}</span>
+        <input type="text" class="title" oninput="action.section.update(event)" value="{{title}}" size="14" />
       </li>
     </template>
     <template id="t-task">
       <li id="t{{id}}" class="task">
           <input type="checkbox" onclick="action.task.onChecked(this)" />
-          <span class="title" contenteditable="true">{{title}}</span>
+          <input type="text" class="title" value="{{title}}" />
       </li>
     </template>
     <template id="t-main">
       <section>
         <header></header>
-        <h1 class="title" contenteditable="true">{{title}}</h1>
+        <h1><input type="text" class="title" value="{{title}}" /></h1>
         <h2>
           <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
         </h2>
@@ -338,7 +400,7 @@
       <div class="group">
         <h2>
           <button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>
-          <span class="title" contenteditable="true">{{title}}</span>
+          <input type="text" class="title" value="{{title}}" />
           <span class="badge">0/6</span>
         </h2>
         <ul>
@@ -355,12 +417,18 @@
     </template>
 
     <script>
+      if (!Array.prototype.last){
+        Array.prototype.last = function(){
+          return this[this.length - 1];
+        };
+      };
+
       // Load data (local-first, webdav compatible, gun db? maybe only for public sharing...)
       const TYPE = {
-        CATEGORY: 'c',
-        SECTION: 's',
-        GROUP: 'g',
-        TASK: 't',
+        CATEGORY: 'c', // file
+        SECTION: 's', // h1
+        GROUP: 'g', // h2
+        TASK: 't', // - [ ]
       }
       const store = {
         local: {
@@ -380,21 +448,74 @@
             return Math.max(0, ...arr.map(o => o.id))+1;
           }
         },
-        remote: {
+        webdav: {
+          get: (key) => {
+            
+          },
+          set: (key, value) => {
 
+          },
+          all: (type) => {
+            
+          },
+          nextId: (type) => {
+            const arr = store.local.all(type);
+            return Math.max(0, ...arr.map(o => o.id))+1;
+          }
         }
       }
       store.current = store.local;
 
+      let fs; // GLOBAL WEBDAV ACCESS
+
       const db = {
         category: {
+          all: async () => {
+            const children = await fs.dir('tasks/').children();
+            return children.filter(child =>
+              child.name.endsWith('.md')
+              && child.name !== 'today.md'
+            );
+          },
+          nextOrder: async() => {
+            let next = 0;
+            const categories = await db.category.all();
+            await Promise.all(categories.map(child => {
+              return (async () => {
+                const content = await child.read();
+
+                // yaml frontmatter parsing
+                const split = content.split('---');
+                if (content.startsWith('---') && split.length > 2) {
+                  const yamlFrontmatter = jsyaml.load(split[1].trim());
+                  if (yamlFrontmatter.order) {
+                    next = Math.max(next, yamlFrontmatter.order);
+                  }
+                }
+              })();
+            }));
+            return next+1;
+          },
           create: async () => {
-            // TODO new file on webdav
-            const data = { id:store.current.nextId(TYPE.CATEGORY), title:'Catégorie' };
-            store.current.set('c'+data.id, data);
-            return data;
+            const title = Catégorie;
+            const frontmatter = jsyaml.dump({
+              order: await db.category.nextOrder(),
+              uuid: crypto.randomUUID()
+            });
+            await fs.file('tasks/Catégorie.md').write(`---\n${frontmatter}---\n\n`);
+
+            return {
+              id:frontmatter.uuid,
+              order:frontmatter.order,
+              title:title,
+              sections:[]
+            };
+          },
+          get: async (id) => {
+
           },
           update: async (id, key, value) => {
+            if (key === 'id') { console.error("can't update id"); return; }
             const data = store.current.get(id);
             data[key] = value;
             store.current.set(id, data);
@@ -433,6 +554,21 @@
         return (data) => {
           const clone = template.cloneNode(true);
           Object.entries(data).forEach(([key, value]) => {
+            // TODO auto update on value change with span class key
+            /*const str = `\{\{${key}\}\}`;
+            const reg = new RegExp(str, 'i');
+            
+            let match;
+            while (match = clone.innerHTML.match(reg)) {
+              clone.innerHTML = clone.innerHTML.substring(0,match.index) + value + clone.innerHTML.substring(match.index+str.length);
+            }*/
+
+            /*
+            const update = (value) => clone.querySelectorAll(`.${key}`).forEach(e => e.textContent = value);
+            ui.category.addEventListener(`update-${key}`, update);
+            update(value);
+            */
+
             clone.innerHTML = clone.innerHTML.replaceAll('{{'+key+'}}', value); // TODO replaceAll polyfill
           });
           return clone.content.firstElementChild;
@@ -440,23 +576,28 @@
       };
       const ui = {
         category: {
+          template: categoryTemplate,
           create: create(categoryTemplate),
-          update: () => {}
+          update: () => {},
         },
         section: {
+          template: sectionTemplate,
           create: create(sectionTemplate),
           select: (data) => {
             // TODO update main
             console.log(main.querySelector('.title'))
-            main.querySelector('.title').textContent = data.title;
+            main.querySelector('.title').value = data.title;
           },
           update: (data) => {
             if (location.href.includes('#s'+data.id)) { // selected
-              main.querySelector('.title').textContent = data.title;
+              main.querySelector('.title').value = data.title;
             }
           }
         }
       };
+
+      // TODO emoji picker for sections
+      //https://emoji.julien-marcou.fr/
 
       const action = {
         category: {
@@ -464,13 +605,14 @@
             const data = await db.category.create();
             const category = ui.category.create(data);
             e.parentNode.insertBefore(category, e); // insert before add category button
-            category.querySelector('.title').focus(); // auto focus title for editing
-            selectElementContents(category.querySelector('.title')); // all text is selected
+            //category.querySelector('.title').focus(); // auto focus title for editing
+            category.querySelector('.title').select();
+            //selectElementContents(category.querySelector('.title')); // all text is selected
           },
           update: async (e) => {
             const target = e.target;
             if (target.classList.contains('title')) {
-              db.category.update(target.closest('section').id, 'title', target.textContent);
+              db.category.update(target.closest('section').id, 'title', target.value);
             }
           }
         },
@@ -479,8 +621,9 @@
             const data = await db.section.create();
             const section = ui.section.create(data);
             e.closest('section').querySelector('ul').appendChild(section); // append li at the end of ul
-            section.querySelector('.title').focus(); // auto focus title for editing
-            selectElementContents(section.querySelector('.title')); // all text is selected
+            //section.querySelector('.title').focus(); // auto focus title for editing
+            section.querySelector('.title').select();
+            //selectElementContents(section.querySelector('.title')); // all text is selected
           },
           select: async (e) => {
             if (location.href.includes('#'+e.id)) return; // already selected
@@ -492,7 +635,7 @@
             const target = e.target;
             if (target.classList.contains('title')) {
               const sid = target.closest('li').id;
-              db.section.update(sid, 'title', target.textContent);
+              db.section.update(sid, 'title', target.value);
               ui.section.update(await db.section.select(sid));
             }
           }
@@ -509,12 +652,118 @@
         },
       }
 
-      function load() {
+      const wd = document.querySelector('webdav-form');
+      const onWebdavConnect = async () => {
+        fs = wd.fs;
 
+        // category: file
+        // section: h1
+        // group: h2
+        // task
+
+        const filesWithoutFrontmatter = [];
+        let orderMax = 0;
+
+        // Load files under 'tasks/' and setup categories and sections for nav
+        const btnAddCategory = document.querySelector('.btn-add-category');
+        const categories = fs.dir('tasks/');
+        const children = await categories.children();
+        await Promise.all(children.map(child => {
+          if (!child.name.endsWith('.md')) return;
+          if (child.name === 'today.md') return;
+
+          const title = capitalizeFirstLetter(decodeURI(child.name).replace(/\..*$/, ''));
+          const category = ui.category.create({title: title, id:title});
+          nav.insertBefore(category, btnAddCategory);
+
+          return (async () => {
+            const content = await child.read();
+            child.content = content;
+
+            // yaml frontmatter parsing
+            const split = content.split('---');
+            if (content.startsWith('---') && split.length > 2) {
+              const yamlFrontmatter = jsyaml.load(split[1].trim());
+              console.log(yamlFrontmatter);
+              if (yamlFrontmatter.order) {
+                category.style.order = yamlFrontmatter.order;
+                orderMax = Math.max(orderMax, yamlFrontmatter.order);
+              }
+            } else {
+              filesWithoutFrontmatter.push(child);
+            }
+            
+            const sections = [...content.matchAll(/^# (.*)$/gm)];
+            const groups = [...content.matchAll(/^## (.*)$/gm)];
+            const tasks = [...content.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
+
+            sections.forEach(s => {
+              const sectionIcon = s[1].replace(/ .*$/, '');
+              const sectionTitle = s[1].replace(/^[^ ]* /, '');
+
+              const section = ui.section.create({title:sectionTitle, icon:sectionIcon, id:sectionTitle});
+              category.querySelector('ul').appendChild(section);
+            });
+          })();
+        }));
+
+        await Promise.all(filesWithoutFrontmatter.map(file => {
+          const frontmatter = jsyaml.dump({
+            order: orderMax++,
+            uuid: crypto.randomUUID()
+          });
+          return file.write(`---\n${frontmatter}---\n\n`+file.content);
+        }));
+
+        // TODO
+        // - order always begin at 0
+        // - order is continous [0,1,2,...], no jump in between ~[0,2,...]~
+        // - order can't have the same value for multiple categories
+        // else write all files with corrected order
+
+        console.log(await db.category.nextOrder());
+
+        return true; // TODO TEST
+
+        const tasksFile = fs.file('tasks.md');
+        tasksFile.read(content => {
+          // TODO Metadata as YAML frontmatter
+
+          // from md to group and tasks
+          const groups = [...content.matchAll(/^## (.*)$/gm)];
+          const tasks = [...content.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
+          tasks.forEach(m => {
+            const group = groups.filter(t => t.index < m.index).last();
+            m.title = group[1];
+            if (!group.tasks) group.tasks = [];
+            group.tasks.push(m);
+          });
+          //console.log(tasks)
+          //console.log(groups);
+
+          // TODO? keep groups even if there is no tasks in it
+          // example
+          // from tasks to md
+          const begin = content.split('##')[0]; // keep the beginning of the file
+          let currentGroup;
+          const md = tasks.reduce((acc, task) => {
+            let ret = '';
+            if (currentGroup !== task.title) {
+              if (currentGroup) ret += '\n'; // not on the first one
+              currentGroup = task.title;
+              ret += `## ${currentGroup}\n`;
+            }
+            ret += `${task[1]}- [${task[2]}] ${task[3]}\n`;
+            return acc + ret;
+          }, begin);
+          //console.log(md)
+        });
+      };
+      if (wd.isRemoteConnected) {
+        onWebdavConnect();
+      } else {
+        wd.addEventListener('connect', onWebdavConnect);
       }
-      // Setup nav
-      // Setup main
-      // Enable edition
 
       // Helpers
       function selectElementContents(el) {
@@ -526,6 +775,9 @@
       }
       function insertAfter(newNode, referenceNode) {
         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+      }
+      function capitalizeFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
       }
     </script>
   </body>
