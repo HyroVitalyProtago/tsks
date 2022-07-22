@@ -4,6 +4,7 @@
     <title>tsks</title>
     <!-- <script type="text/javascript" src="webdav.js"></script> -->
     <script type="text/javascript" src="webdav2.js"></script>
+    <script type="text/javascript" src="category.js"></script>
     <script type="text/javascript" src="js-yaml.min.js"></script>
     <style>
       :root{
@@ -651,113 +652,29 @@
           e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
         },
       }
-
+      
+      const btnAddCategory = document.querySelector('.btn-add-category');
       const wd = document.querySelector('webdav-form');
       const onWebdavConnect = async () => {
         fs = wd.fs;
 
-        // category: file
-        // section: h1
-        // group: h2
-        // task
-
-        const filesWithoutFrontmatter = [];
-        let orderMax = 0;
-
-        // Load files under 'tasks/' and setup categories and sections for nav
-        const btnAddCategory = document.querySelector('.btn-add-category');
-        const categories = fs.dir('tasks/');
-        const children = await categories.children();
-        await Promise.all(children.map(child => {
-          if (!child.name.endsWith('.md')) return;
-          if (child.name === 'today.md') return;
-
-          const title = capitalizeFirstLetter(decodeURI(child.name).replace(/\..*$/, ''));
-          const category = ui.category.create({title: title, id:title});
+        Category.init(fs);
+        (await Category.all()).forEach(categoryData => {
+          const category = ui.category.create({title: categoryData.title, id: categoryData.title});
           nav.insertBefore(category, btnAddCategory);
 
-          return (async () => {
-            const content = await child.read();
-            child.content = content;
+          if (categoryData.order) {
+            category.style.order = categoryData.order;
+          }
 
-            // yaml frontmatter parsing
-            const split = content.split('---');
-            if (content.startsWith('---') && split.length > 2) {
-              const yamlFrontmatter = jsyaml.load(split[1].trim());
-              console.log(yamlFrontmatter);
-              if (yamlFrontmatter.order) {
-                category.style.order = yamlFrontmatter.order;
-                orderMax = Math.max(orderMax, yamlFrontmatter.order);
-              }
-            } else {
-              filesWithoutFrontmatter.push(child);
-            }
-            
-            const sections = [...content.matchAll(/^# (.*)$/gm)];
-            const groups = [...content.matchAll(/^## (.*)$/gm)];
-            const tasks = [...content.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
+          categoryData.sections().forEach(sectionData => {
+            const sectionIcon = sectionData[1].replace(/ .*$/, '');
+            const sectionTitle = sectionData[1].replace(/^[^ ]* /, '');
 
-            sections.forEach(s => {
-              const sectionIcon = s[1].replace(/ .*$/, '');
-              const sectionTitle = s[1].replace(/^[^ ]* /, '');
-
-              const section = ui.section.create({title:sectionTitle, icon:sectionIcon, id:sectionTitle});
-              category.querySelector('ul').appendChild(section);
-            });
-          })();
-        }));
-
-        await Promise.all(filesWithoutFrontmatter.map(file => {
-          const frontmatter = jsyaml.dump({
-            order: orderMax++,
-            uuid: crypto.randomUUID()
+            const section = ui.section.create({title:sectionTitle, icon:sectionIcon, id:sectionTitle});
+            category.querySelector('ul').appendChild(section);
           });
-          return file.write(`---\n${frontmatter}---\n\n`+file.content);
-        }));
-
-        // TODO
-        // - order always begin at 0
-        // - order is continous [0,1,2,...], no jump in between ~[0,2,...]~
-        // - order can't have the same value for multiple categories
-        // else write all files with corrected order
-
-        console.log(await db.category.nextOrder());
-
-        return true; // TODO TEST
-
-        const tasksFile = fs.file('tasks.md');
-        tasksFile.read(content => {
-          // TODO Metadata as YAML frontmatter
-
-          // from md to group and tasks
-          const groups = [...content.matchAll(/^## (.*)$/gm)];
-          const tasks = [...content.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
-          tasks.forEach(m => {
-            const group = groups.filter(t => t.index < m.index).last();
-            m.title = group[1];
-            if (!group.tasks) group.tasks = [];
-            group.tasks.push(m);
-          });
-          //console.log(tasks)
-          //console.log(groups);
-
-          // TODO? keep groups even if there is no tasks in it
-          // example
-          // from tasks to md
-          const begin = content.split('##')[0]; // keep the beginning of the file
-          let currentGroup;
-          const md = tasks.reduce((acc, task) => {
-            let ret = '';
-            if (currentGroup !== task.title) {
-              if (currentGroup) ret += '\n'; // not on the first one
-              currentGroup = task.title;
-              ret += `## ${currentGroup}\n`;
-            }
-            ret += `${task[1]}- [${task[2]}] ${task[3]}\n`;
-            return acc + ret;
-          }, begin);
-          //console.log(md)
-        });
+        })
       };
       if (wd.isRemoteConnected) {
         onWebdavConnect();
