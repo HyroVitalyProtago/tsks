@@ -1,3 +1,9 @@
+function createTemplate(html) {
+  const ret = document.createElement('template');
+  ret.innerHTML = html;
+  return ret;
+}
+
 // A category is store as a markdown file on webdav
 class Category {
 
@@ -6,6 +12,7 @@ class Category {
     Category.#webdav = webdav;
   }
 
+  // TODO Memoization/Cache?
   static async all() {
     const children = (await Category.#webdav.dir('tasks/').children()).filter(child =>
       child.name.endsWith('.md')
@@ -13,7 +20,7 @@ class Category {
     );
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      children[i] = await Category.create(children[i]);
+      children[i] = await Category.fromFile(children[i]);
     }
     return children;
   }
@@ -21,16 +28,104 @@ class Category {
     return Math.max(0, ...(await Category.all()).map(category => category.order))+1;
   }
 
-  static async create(file) {
+  static async get(id) {
+    const category = new Category(Category.#webdav.file(id));
+    await category.load();
+    return category;
+  }
+
+  static async fromFile(file) {
     const category = new Category(file);
     await category.load();
     return category;
+  }
+
+  static async get(name) {
+    return Category.fromFile(Category.#webdav.file(`tasks/${name}.md`));
+  }
+
+  static async create() {
+    // TODO check if default file already exist
+    const file = Category.#webdav.file('tasks/Catégorie.md');
+    if (await file.exist()) {
+      console.log("can't create existing file...");
+      return;
+    }
+    
+    const category = new Category(file);
+    await category.save();
+    return category;
+  }
+
+  static template = createTemplate(`
+  <section>
+    <h1>
+      <span class="icon btn-toggle-folding">▾</span>
+      <input class="title" type="text" size="10"/>
+      <button class="btn-add-section"></button>
+    </h1>
+    <ul>
+      <!-- sections -->
+    </ul>
+  </section>
+  `);
+  static createElement(category) {
+    const clone = Category.template.cloneNode(true).content.firstElementChild;
+
+    clone.category = category;
+    clone.setAttribute('title', category.title);
+    clone.querySelector('.title').value = category.title;
+    if (category.order) {
+      clone.style.order = category.order;
+    }
+
+    const toggleFolding = (e) => {
+      // hide next ul element
+      const nextUlElement = e.target.parentElement.nextElementSibling;
+      nextUlElement.style.display = nextUlElement.style.display === 'none' ? null : 'none';
+  
+      // change icon
+      e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
+    }
+  
+    const updateTitle = async (e) => {
+      const target = e.target;
+      try {
+        await category.rename(target.value);
+      } catch(e) {
+        console.error(e);
+        target.value = categoryName;
+      }
+    }
+  
+    const createSection = async (e) => {
+      const sectionData = category.appendSection('Section');
+      const sectionElement = Section.createElement({title: sectionData.title, id: sectionData.title});
+      clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
+      sectionElement.querySelector('.title').select();
+    }
+
+    clone.querySelector('.btn-toggle-folding').addEventListener('click', toggleFolding);
+    clone.querySelector('.title').addEventListener('change', updateTitle);
+    clone.querySelector('.btn-add-section').addEventListener('click', createSection);
+
+    category.sections().forEach(section => {
+      if (section.title === undefined) return;
+      const sectionElement = Section.createElement(section, category);
+      clone.querySelector('ul').appendChild(sectionElement);
+    });
+
+    return clone;
   }
 
   #file;
   #content;
   #frontmatter = {};
   #matter = '';
+  #markdom;
+  #sections;
+  #groups;
+  #tasks;
   #loaded = false;
   constructor(file) {
     this.#file = file;
@@ -39,6 +134,22 @@ class Category {
   // ID ?? UUID ??
 
   // get/set
+
+  async rename(value) {
+    if (!value || value === '') {
+      throw "value can't be null or empty";
+    }
+
+    // TODO check if value if a valid name
+
+    const path = `tasks/${value}.md`;
+    
+    if (await Category.#webdav.file(path).exist()) {
+      throw "can't overwrite an existing file";
+    }
+
+    return this.#file.move(encodeURI(`https://db.ldavid.fr/webdav/tasks/${value}.md`));
+  }
 
   get title() { return capitalizeFirstLetter(decodeURI(this.#file.name).replace(/\..*$/, '')); }
   // set title(value) {}
@@ -55,9 +166,13 @@ class Category {
   
   // section: h1
   sections() {
-    return [...this.#matter.matchAll(/^# (.*)$/gm)];
+    return this.#sections;//[...this.#matter.matchAll(/^# (.*)$/gm)];
   }
   // set sections(value) {}
+
+  appendSection(sectionName) {
+    this.#matter += `\n# ${sectionName}\n`;
+  }
 
   // group: h2
   groups() {
@@ -75,6 +190,7 @@ class Category {
     // TODO check ETAG
     this.#content = await this.#file.read();
 
+    // frontmatter
     const split = this.#content.split('---');
     if (this.#content.startsWith('---') && split.length > 2) {
       // yaml frontmatter parsing
@@ -87,8 +203,27 @@ class Category {
       this.#matter = this.#content;
     }
 
+    // content parsing into dom
+    this.#markdom = markdownParse(this.#matter);
+    console.log(this.#markdom);
+    this.#sections = [new Section(null, this)]; // default section at the beginning of the document before the first
+    this.#markdom.body.childNodes.forEach(child => {
+      if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
+      if (child.nodeName === 'H1') return this.#sections.push(new Section(child.textContent, this));
+      if (child.nodeName === 'SPAN') {
+        return this.#sections[this.#sections.length-1].appendTask(new Task(
+          child.querySelector('.title').innerHTML,
+          child.querySelector('input[type="checkbox"]').checked,
+          child
+        ));
+      }
+    });
+    console.log(this.#sections);
+
     this.#loaded = true;
   }
+
+  markdom() { return this.#markdom; }
   
   async save() {
     // TODO recompute matter
@@ -121,6 +256,110 @@ class Category {
     }, begin);
     */
 
-    return this.#file.write(`---\n${this.#frontmatter}---\n\n`+this.#matter);
+    // New file
+    if (Object.keys(this.#frontmatter).length <= 0) {
+      this.#frontmatter.order = await Category.nextOrder();
+      this.#frontmatter.uuid = crypto.randomUUID(); // TODO useful?
+    }
+
+    return this.#file.write(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
+  }
+}
+
+const markdownParse = (text) => {
+	return new DOMParser().parseFromString(text
+		.replace(/^### (.*$)/gim, '<h3>$1</h3>') // h3 tag
+		.replace(/^## (.*$)/gim, '<h2>$1</h2>') // h2 tag
+		.replace(/^# (.*$)/gim, '<h1>$1</h1>') // h1 tag
+		.replace(/\*\*(.*)\*\*/gim, '<b>$1</b>') // bold text
+		.replace(/\*(.*)\*/gim, '<i>$1</i>') // italic text
+    .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `<span class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></span>`) // tasks
+    .replaceAll('checked="x"', 'checked')
+    .replaceAll('checked=" "', '')
+    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2">$1</a>') // links
+    .replace(/ (http.*)\s/gim, ' <a href="$1">$1</a>') // links
+	  .trim(), 'text/html'); // using trim method to remove whitespace
+}
+
+class Section {
+  static template = createTemplate(`
+  <li>
+    <span class="icon"></span>
+    <input class="title" type="text" size="14" />
+  </li>
+  `);
+  static createElement(section, category) {
+    const clone = Section.template.cloneNode(true).content.firstElementChild;
+
+    clone.section = section;
+    clone.querySelector('.icon').textContent = section.icon;
+    clone.querySelector('.title').value = section.title;
+
+    const select = (e) => {
+      // if (location.href.includes('#'+e.id)) return; // already selected
+      // location.href = '#'+e.id;
+
+      main.querySelector('.title').value = section.title;
+
+      const content = main.querySelector('.content');
+      content.innerHTML = ''; // reset
+      const ul = document.createElement('ul');
+      content.appendChild(ul);
+      section.tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.appendChild(task.node);
+        ul.appendChild(li);
+      });
+      console.log(category.markdom().body);
+      //main.querySelector('.content').innerHTML = category.markdom().body.innerHTML;
+    }
+  
+    const updateTitle = async (e) => {
+      // const target = e.target;
+      // try {
+      //   await category.rename(target.value);
+      // } catch(e) {
+      //   console.error(e);
+      //   target.value = categoryName;
+      // }
+    }
+
+    clone.addEventListener('click', select);
+    clone.querySelector('.title').addEventListener('change', updateTitle);
+
+    return clone;
+  }
+
+  icon;
+  title;
+  // groups;
+  tasks = [];
+  category;
+  constructor(name, category) {
+    if (name === null) {
+      // TODO
+    } else {
+      const values = name.split(' ');
+      this.icon = values.length > 1 ? values[0] : '📁';
+      this.title = values.length > 1 ? values[1] : values[0];
+    }
+    this.category = category;
+  }
+
+  appendTask(task) {
+    this.tasks.push(task);
+  }
+}
+
+class Task {
+  title;
+  done;
+  node;
+  #shadowNode;
+  constructor(title, done, node) {
+    this.title = title;
+    this.done = done;
+    this.#shadowNode = node;
+    this.node = node.cloneNode(true);
   }
 }

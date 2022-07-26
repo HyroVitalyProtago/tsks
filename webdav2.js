@@ -82,6 +82,14 @@ class File {
     this.name = nameFor(path);
     this.metadata = metadata;
   }
+  async exist() {
+    try {
+      await this.read(args);
+      return true; // file exist
+    } catch(e) {
+      return false;
+    }
+  }
   read(args) { // read text by default
     return this.webdav.fetch(this.url, {method: 'GET', ...args}).then(res => res.text());
   }
@@ -98,7 +106,12 @@ class File {
     return this.webdav.fetch(this.url, {method: 'COPY', headers:{"Destination":desturl, "Depth":'infinity'}, ...args});
   }
   move(desturl, args) {
-    return this.webdav.fetch(this.url, {method: 'MOVE', headers:{"Destination":desturl, "Depth":'infinity'}, ...args});
+    return this.webdav.fetch(this.url, {method: 'MOVE', headers:{"Destination":desturl, "Depth":'infinity'}, ...args})
+      .then(ret => {
+        this.url = desturl;
+        this.name = nameFor(this.url);
+        return ret;
+      });
   }
 }
 
