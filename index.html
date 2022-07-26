@@ -306,11 +306,11 @@
       <input type="search" placeholder="Rechercher"/>
       <ul>
         <li><span class="icon">📫</span>Boîte de réception</li>
-        <li><span class="icon">📆</span>Aujourd'hui</li>
+        <li onclick="today()"><span class="icon">📆</span>Aujourd'hui</li>
         <li><span class="icon">🔥</span>Urgent</li>
         <li><span class="icon">🎯</span>Important</li>
       </ul>
-      <button class="btn-add-category" onclick="action.category.create(this)">Nouvelle catégorie</button>
+      <button class="btn-add-category" onclick="newCategory()">Nouvelle catégorie</button>
     </nav>
     <main>
       <section>
@@ -423,7 +423,7 @@
 
       const nav = document.querySelector('nav');
       const main = document.querySelector('main');
-      const categoryTemplate = document.querySelector('#t-category');
+      /*const categoryTemplate = document.querySelector('#t-category');
       const sectionTemplate = document.querySelector('#t-section');
       const taskTemplate = document.querySelector('#t-task');
       const create = (template) => {
@@ -431,19 +431,17 @@
           const clone = template.cloneNode(true);
           Object.entries(data).forEach(([key, value]) => {
             // TODO auto update on value change with span class key
-            /*const str = `\{\{${key}\}\}`;
-            const reg = new RegExp(str, 'i');
+            // const str = `\{\{${key}\}\}`;
+            // const reg = new RegExp(str, 'i');
             
-            let match;
-            while (match = clone.innerHTML.match(reg)) {
-              clone.innerHTML = clone.innerHTML.substring(0,match.index) + value + clone.innerHTML.substring(match.index+str.length);
-            }*/
+            // let match;
+            // while (match = clone.innerHTML.match(reg)) {
+            //   clone.innerHTML = clone.innerHTML.substring(0,match.index) + value + clone.innerHTML.substring(match.index+str.length);
+            // }
 
-            /*
-            const update = (value) => clone.querySelectorAll(`.${key}`).forEach(e => e.textContent = value);
-            ui.category.addEventListener(`update-${key}`, update);
-            update(value);
-            */
+            // const update = (value) => clone.querySelectorAll(`.${key}`).forEach(e => e.textContent = value);
+            // ui.category.addEventListener(`update-${key}`, update);
+            // update(value);
 
             clone.innerHTML = clone.innerHTML.replaceAll('{{'+key+'}}', value); // TODO replaceAll polyfill
           });
@@ -471,10 +469,28 @@
           }
         }
       };
+      */
 
       // TODO emoji picker for sections
-      //https://emoji.julien-marcou.fr/
+      // https://emoji.julien-marcou.fr/
 
+      const btnAddCategory = document.querySelector('.btn-add-category');
+      async function newCategory() {
+        const category = await Category.create();
+        const categoryElement = Category.createElement(category);
+        nav.insertBefore(categoryElement, btnAddCategory);
+        categoryElement.querySelector('.title').select();
+      }
+
+      async function today() {
+        const today = await Category.today();
+        const todayDefaultSection = today.sections()[0];
+        todayDefaultSection.icon = '📆';
+        todayDefaultSection.title = "Aujourd'hui";
+        todayDefaultSection.select();
+      }
+
+      /*
       const action = {
         category: {
           create: async (e) => {
@@ -505,14 +521,14 @@
         },
         section: {
           create: async (e) => {
-            const categoryName = e.closest('section').id.substring(1);
-            const category = await Category.get(categoryName);
-            console.log(category);
-            const sectionData = category.appendSection('Section');
-            // const data = await db.section.create();
-            const section = ui.section.create({title: sectionData.title, id: sectionData.title});
-            e.closest('section').querySelector('ul').appendChild(section); // append li at the end of ul
-            section.querySelector('.title').select();
+            // const categoryName = e.closest('section').id.substring(1);
+            // const category = await Category.get(categoryName);
+            // console.log(category);
+            // const sectionData = category.appendSection('Section');
+            // // const data = await db.section.create();
+            // const section = ui.section.create({title: sectionData.title, id: sectionData.title});
+            // e.closest('section').querySelector('ul').appendChild(section); // append li at the end of ul
+            // section.querySelector('.title').select();
           },
           select: async (e) => {
             // if (location.href.includes('#'+e.id)) return; // already selected
@@ -540,8 +556,8 @@
           e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
         },
       }
+      */
       
-      const btnAddCategory = document.querySelector('.btn-add-category');
       const wd = document.querySelector('webdav-form');
       const onWebdavConnect = async () => {
         fs = wd.fs;
@@ -551,6 +567,8 @@
           const categoryElement = Category.createElement(categoryData);
           nav.insertBefore(categoryElement, btnAddCategory);
         })
+
+        today();
       };
       if (wd.isRemoteConnected) {
         onWebdavConnect();

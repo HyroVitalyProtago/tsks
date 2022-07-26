@@ -26,6 +26,9 @@ class Category {
   static async nextOrder() {
     return Math.max(0, ...(await Category.all()).map(category => category.order))+1;
   }
+  static async today() {
+    return Category.fromFile(Category.#webdav.file('tasks/today.md'));
+  }
 
   // static async get(id) {
   //   const category = new Category(Category.#webdav.file(id));
@@ -71,7 +74,7 @@ class Category {
     const clone = Category.template.cloneNode(true).content.firstElementChild;
 
     clone.category = category;
-    clone.setAttribute('title', category.title);
+    //clone.setAttribute('title', category.title);
     clone.querySelector('.title').value = category.title;
     if (category.order) {
       clone.style.order = category.order;
@@ -97,8 +100,9 @@ class Category {
     }
   
     const createSection = async (e) => {
-      const sectionData = category.appendSection('Section');
-      const sectionElement = Section.createElement({title: sectionData.title, id: sectionData.title});
+      const section = new Section('Section', category);
+      this.#sections.push(section);
+      const sectionElement = Section.createElement(section, category);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
       sectionElement.querySelector('.title').select();
     }
@@ -166,21 +170,16 @@ class Category {
   sections() {
     return this.#sections;//[...this.#matter.matchAll(/^# (.*)$/gm)];
   }
-  // set sections(value) {}
-
-  appendSection(sectionName) {
-    this.#matter += `\n# ${sectionName}\n`;
-  }
 
   // group: h2
-  groups() {
-    return [...this.#matter.matchAll(/^## (.*)$/gm)];
-  }
+  // groups() {
+  //   return [...this.#matter.matchAll(/^## (.*)$/gm)];
+  // }
 
   // task: - [ ]
-  tasks() {
-    return [...this.#matter.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
-  }
+  // tasks() {
+  //   return [...this.#matter.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
+  // }
 
   isLoaded() { return this.#loaded; }
 
@@ -217,6 +216,9 @@ class Category {
       }
     });
     // console.log(this.#sections);
+
+    // console.log(this.#matter);
+    // console.log(this.#markdom.html());
 
     this.#loaded = true;
   }
@@ -265,18 +267,80 @@ class Category {
 }
 
 const markdownParse = (text) => {
-	return new DOMParser().parseFromString(text
+	const dom = new DOMParser().parseFromString(text
 		.replace(/^### (.*$)/gim, '<h3>$1</h3>') // h3 tag
 		.replace(/^## (.*$)/gim, '<h2>$1</h2>') // h2 tag
 		.replace(/^# (.*$)/gim, '<h1>$1</h1>') // h1 tag
 		.replace(/\*\*(.*)\*\*/gim, '<b>$1</b>') // bold text
 		.replace(/\*(.*)\*/gim, '<i>$1</i>') // italic text
-    .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `<span class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></span>`) // tasks
+
+    .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `$1<span class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></span>`) // tasks
     .replaceAll('checked="x"', 'checked')
     .replaceAll('checked=" "', '')
+
     .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a target="_blank" href="$2">$1</a>') // links
     .replace(/ (http.*)\s/gim, ' <a target="_blank" href="$1">$1</a>') // links
-	  .trim(), 'text/html'); // using trim method to remove whitespace
+	  /*.trim()*/, 'text/html'); // using trim method to remove whitespace
+  // console.log(dom.body.innerHTML);
+
+  // const treeWalker = document.createTreeWalker(dom.body);
+  // let currentNode = treeWalker.currentNode;
+  // while(currentNode) {
+  //   // console.log(currentNode);
+  //   // console.log(currentNode.nodeName);
+
+  //   // TODO (sub)task indentation
+    
+  //   if (currentNode.nodeName === "#text") {
+  //     const level = (currentNode.data.match(/\t/g) || []).length;
+  //     const ul = document.createElement('ul');
+  //     // ul.level = level;
+  //     const li = document.createElement('li');
+  //     li.appendChild(currentNode.nextSibling);
+  //     ul.appendChild(li);
+  //   }
+
+  //   currentNode = treeWalker.nextNode();
+  // }
+
+  console.log(dom.body);
+
+  dom.html = () => {
+    let html = '';
+    
+    // https://developer.mozilla.org/en-US/docs/Web/API/Document/createTreeWalker
+    const treeWalker = document.createTreeWalker(dom);
+    
+    let currentNode = treeWalker.currentNode;
+    while(currentNode) {
+      // console.log(currentNode);
+      // console.log(currentNode.nodeName);
+
+      // TODO (sub)task indentation
+      if (currentNode.nodeName === "B") {
+        html += `**${currentNode.textContent}**`;
+        currentNode = treeWalker.nextNode(); // pass next text node
+      } else if (currentNode.nodeName === "INPUT") {
+        if (currentNode.type = "checkbox") {
+          const checked = currentNode.checked ? 'x' : ' ';
+          html += `- [${checked}] `;
+        }
+      } else if (currentNode.nodeName === "A") {
+        html += `[${currentNode.href}](${currentNode.textContent})`;
+        currentNode = treeWalker.nextNode(); // pass next text node
+      } else if (currentNode.nodeName === "#text") {
+        html += currentNode.nodeValue;
+      }
+
+      currentNode = treeWalker.nextNode();
+    }
+
+    return html;
+  }
+  // dom.html();
+  // console.log(dom.html());
+
+  return dom;
 }
 
 class Section {
@@ -293,24 +357,9 @@ class Section {
     clone.querySelector('.icon').textContent = section.icon;
     clone.querySelector('.title').value = section.title;
 
-    const select = (e) => {
-      // if (location.href.includes('#'+e.id)) return; // already selected
-      // location.href = '#'+e.id;
-
-      main.querySelector('.icon').textContent = section.icon;
-      main.querySelector('.title').value = section.title;
-
-      const content = main.querySelector('.content');
-      content.innerHTML = ''; // reset
-      const ul = document.createElement('ul');
-      content.appendChild(ul);
-      section.tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.appendChild(task.node);
-        ul.appendChild(li);
-      });
-      // console.log(category.markdom().body);
-    }
+    // const select = () => {
+      
+    // }
   
     const updateTitle = async (e) => {
       // const target = e.target;
@@ -322,7 +371,7 @@ class Section {
       // }
     }
 
-    clone.addEventListener('click', select);
+    clone.addEventListener('click', () => section.select());
     clone.querySelector('.title').addEventListener('change', updateTitle);
 
     return clone;
@@ -346,6 +395,25 @@ class Section {
 
   appendTask(task) {
     this.tasks.push(task);
+  }
+
+  select() {
+      // if (location.href.includes('#'+e.id)) return; // already selected
+      // location.href = '#'+e.id;
+
+      main.querySelector('.icon').textContent = this.icon;
+      main.querySelector('.title').value = this.title;
+
+      const content = main.querySelector('.content');
+      content.innerHTML = ''; // reset
+      const ul = document.createElement('ul');
+      content.appendChild(ul);
+      this.tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.appendChild(task.node);
+        ul.appendChild(li);
+      });
+      // console.log(category.markdom().body);
   }
 }
 
