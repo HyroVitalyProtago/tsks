@@ -19,7 +19,6 @@ class Category {
       && child.name !== 'today.md'
     );
     for (let i = 0; i < children.length; i++) {
-      const child = children[i];
       children[i] = await Category.fromFile(children[i]);
     }
     return children;
@@ -28,11 +27,11 @@ class Category {
     return Math.max(0, ...(await Category.all()).map(category => category.order))+1;
   }
 
-  static async get(id) {
-    const category = new Category(Category.#webdav.file(id));
-    await category.load();
-    return category;
-  }
+  // static async get(id) {
+  //   const category = new Category(Category.#webdav.file(id));
+  //   await category.load();
+  //   return category;
+  // }
 
   static async fromFile(file) {
     const category = new Category(file);
@@ -40,12 +39,11 @@ class Category {
     return category;
   }
 
-  static async get(name) {
-    return Category.fromFile(Category.#webdav.file(`tasks/${name}.md`));
-  }
+  // static async get(name) {
+  //   return Category.fromFile(Category.#webdav.file(`tasks/${name}.md`));
+  // }
 
   static async create() {
-    // TODO check if default file already exist
     const file = Category.#webdav.file('tasks/Catégorie.md');
     if (await file.exist()) {
       console.log("can't create existing file...");
@@ -205,7 +203,7 @@ class Category {
 
     // content parsing into dom
     this.#markdom = markdownParse(this.#matter);
-    console.log(this.#markdom);
+    // console.log(this.#markdom);
     this.#sections = [new Section(null, this)]; // default section at the beginning of the document before the first
     this.#markdom.body.childNodes.forEach(child => {
       if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
@@ -218,7 +216,7 @@ class Category {
         ));
       }
     });
-    console.log(this.#sections);
+    // console.log(this.#sections);
 
     this.#loaded = true;
   }
@@ -276,8 +274,8 @@ const markdownParse = (text) => {
     .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `<span class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></span>`) // tasks
     .replaceAll('checked="x"', 'checked')
     .replaceAll('checked=" "', '')
-    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a href="$2">$1</a>') // links
-    .replace(/ (http.*)\s/gim, ' <a href="$1">$1</a>') // links
+    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a target="_blank" href="$2">$1</a>') // links
+    .replace(/ (http.*)\s/gim, ' <a target="_blank" href="$1">$1</a>') // links
 	  .trim(), 'text/html'); // using trim method to remove whitespace
 }
 
@@ -299,6 +297,7 @@ class Section {
       // if (location.href.includes('#'+e.id)) return; // already selected
       // location.href = '#'+e.id;
 
+      main.querySelector('.icon').textContent = section.icon;
       main.querySelector('.title').value = section.title;
 
       const content = main.querySelector('.content');
@@ -310,8 +309,7 @@ class Section {
         li.appendChild(task.node);
         ul.appendChild(li);
       });
-      console.log(category.markdom().body);
-      //main.querySelector('.content').innerHTML = category.markdom().body.innerHTML;
+      // console.log(category.markdom().body);
     }
   
     const updateTitle = async (e) => {
@@ -361,5 +359,36 @@ class Task {
     this.done = done;
     this.#shadowNode = node;
     this.node = node.cloneNode(true);
+    
+    const titleElement = this.node.querySelector('.title');
+    const checkboxElement = this.node.querySelector('input[type="checkbox"]');
+    
+    if (checkboxElement.checked) titleElement.classList.add('checked');
+    checkboxElement.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        titleElement.classList.add('checked');
+      } else {
+        titleElement.classList.remove('checked');
+      }
+    });
+
+    titleElement.classList.add('strike');
+    titleElement.addEventListener('mousedown', (e) => { // before click event
+      if (e.target.nodeName === 'A' && e.ctrlKey) {
+        window.open(e.target.href);
+        // e.stopPropagation();
+        return;
+      }
+      if (titleElement.hasAttribute('contenteditable')) return;
+      titleElement.setAttribute('contenteditable', '');
+      // show raw content
+    });
+    titleElement.addEventListener('blur', (e) => {
+      if (!titleElement.hasAttribute('contenteditable')) return;
+      titleElement.removeAttribute('contenteditable');
+      // parse content to display
+    });
+
+    // TODO update shadowNode
   }
 }
