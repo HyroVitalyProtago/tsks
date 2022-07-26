@@ -101,7 +101,11 @@ class Category {
   
     const createSection = async (e) => {
       const section = new Section('Section', category);
-      this.#sections.push(section);
+      category.#sections.push(section);
+      const h1 = document.createElement('h1');
+      h1.textContent = `${section.icon} ${section.title}`;
+      category.#markdom.body.appendChild(h1);
+      console.log(category.#markdom.html());
       const sectionElement = Section.createElement(section, category);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
       sectionElement.querySelector('.title').select();
@@ -303,7 +307,7 @@ const markdownParse = (text) => {
   //   currentNode = treeWalker.nextNode();
   // }
 
-  console.log(dom.body);
+  // console.log(dom.body);
 
   dom.html = () => {
     let html = '';
@@ -317,7 +321,10 @@ const markdownParse = (text) => {
       // console.log(currentNode.nodeName);
 
       // TODO (sub)task indentation
-      if (currentNode.nodeName === "B") {
+      if (currentNode.nodeName === "H1") {
+        html += `# ${currentNode.textContent}\n`;
+        currentNode = treeWalker.nextNode(); // pass next text node
+      } else if (currentNode.nodeName === "B") {
         html += `**${currentNode.textContent}**`;
         currentNode = treeWalker.nextNode(); // pass next text node
       } else if (currentNode.nodeName === "INPUT") {
@@ -362,13 +369,9 @@ class Section {
     // }
   
     const updateTitle = async (e) => {
-      // const target = e.target;
-      // try {
-      //   await category.rename(target.value);
-      // } catch(e) {
-      //   console.error(e);
-      //   target.value = categoryName;
-      // }
+      const target = e.target;
+      section.title = e.target.value;
+      // TODO update shadowdom
     }
 
     clone.addEventListener('click', () => section.select());

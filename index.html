@@ -24,7 +24,7 @@
           --border-color: #5f6368;
           --search-background: var(--nav-background-color);
           --link-color: rgb(172, 172, 255);
-          --strike-color: rgb(138, 138, 236);
+          --strike-color: rgb(104, 133, 236);
         }
       }
 
@@ -287,12 +287,13 @@
         --strike: 0;
         
         background: linear-gradient(90deg, transparent, var(--strike-color) 0) no-repeat left center / calc(var(--strike) * 100%) var(--thickness) !important;
-        transition: background-size .4s ease;
+        transition: background-size .4s ease, color .9s ease;
         /* background-position-x: left; */
       }
 
       .checked {
         --strike: 1;
+        color: rgba(var(--text-color), .5);
       }
 
       a {
