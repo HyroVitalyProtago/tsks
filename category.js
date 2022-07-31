@@ -86,7 +86,7 @@ class Category {
       nextUlElement.style.display = nextUlElement.style.display === 'none' ? null : 'none';
   
       // change icon
-      e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
+      e.target.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
     }
   
     const updateTitle = async (e) => {
@@ -100,12 +100,16 @@ class Category {
     }
   
     const createSection = async (e) => {
-      const section = new Section('Section', category);
-      category.#sections.push(section);
       const h1 = document.createElement('h1');
-      h1.textContent = `${section.icon} ${section.title}`;
+      h1.textContent = '📁 Section';
+      category.#markdom.body.appendChild(document.createTextNode('\n\n')); // TODO check if there is already \n at the end
       category.#markdom.body.appendChild(h1);
+
+      const section = new Section(h1, category);
+      category.#sections.push(section);
+      
       console.log(category.#markdom.html());
+
       const sectionElement = Section.createElement(section);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
       sectionElement.querySelector('.title').select();
@@ -123,6 +127,9 @@ class Category {
 
     return clone;
   }
+
+  static currentCategory;
+  static currentSection;
 
   #file;
   #content;
@@ -159,6 +166,7 @@ class Category {
 
   get title() { return capitalizeFirstLetter(decodeURI(this.#file.name).replace(/\..*$/, '')); }
   // set title(value) {}
+  frontmatter() { return this.#frontmatter; }
   content() { return this.#content; } // frontmatter + matter
   matter() { return this.#matter; }
 
@@ -210,9 +218,7 @@ class Category {
     this.#markdom.body.childNodes.forEach(child => {
       if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
       if (child.nodeName === 'H1') return this.#sections.push(new Section(child, this));
-      if (child.nodeName === 'DIV') {
-        return this.#sections[this.#sections.length-1].appendTask(new Task(child, this));
-      }
+      if (child.nodeName === 'DIV') return this.#sections[this.#sections.length-1].appendTask(new Task(child, this));
     });
 
     this.#loaded = true;
@@ -228,10 +234,10 @@ class Category {
     }
 
     // TODO replace this.#matter with this.#markdom.html()
-    console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
-    console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#markdom.html());
+    // console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
+    // console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#markdom.html());
 
-    return this.#file.write(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
+    return this.#file.write(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#markdom.html());
   }
 }
 
@@ -299,7 +305,7 @@ const markdownParse = (text) => {
         if (currentNode.getAttribute('data-type')) {
           html += `${currentNode.href}`;
         } else {
-          html += `[${currentNode.href}](${currentNode.textContent})`;
+          html += `[${currentNode.textContent}](${currentNode.href})`;
         }
         currentNode = treeWalker.nextNode(); // pass next text node
       } else if (currentNode.nodeName === "#text") {
@@ -328,15 +334,9 @@ class Section {
     clone.section = section;
     clone.querySelector('.icon').textContent = section.icon;
     clone.querySelector('.title').value = section.title;
-  
-    const updateTitle = async (e) => {
-      const target = e.target;
-      section.title = e.target.value;
-      // TODO update shadowdom
-    }
 
     clone.addEventListener('click', () => section.select());
-    clone.querySelector('.title').addEventListener('change', updateTitle);
+    clone.querySelector('.title').addEventListener('change', e => section.title = e.target.value);
 
     return clone;
   }
@@ -367,9 +367,13 @@ class Section {
   }
 
   set title(value) {
+    if (value === '') {
+      console.log('TODO remove section');
+      return;
+    }
     // TODO check value
     this.#title = value;
-    // if (this.#selected) main.querySelector('.title').value = this.title;
+    if (Category.currentSection === this) main.querySelector('.title').value = this.title;
     if (this.#shadowNode !== null) {
       this.#shadowNode.textContent = `${this.icon} ${this.#title}`; 
       this.category.save();
@@ -380,12 +384,39 @@ class Section {
     this.tasks.push(task);
   }
 
+  newTask(value) {
+    // create task element in markdom
+    const taskElement = Task.createElement({checked:false, title:value});
+    if (this.#shadowNode !== null) {
+      this.#shadowNode.parentNode.insertBefore(taskElement, this.#shadowNode.nextSibling);
+      this.#shadowNode.parentNode.insertBefore(document.createTextNode('\n'), this.#shadowNode.nextSibling);
+    } else {
+      console.error('Not supported yet...');
+      return;
+    }
+    
+    // create task & append
+    const task = new Task(taskElement, this.category);
+    this.tasks.unshift(task); // prepend
+    
+    this.category.save();
+    this.select(); // reload ?
+  }
+
   select() {
       // if (location.href.includes('#'+e.id)) return; // already selected
       // location.href = '#'+e.id;
+      Category.currentCategory = this.category;
+      Category.currentSection = this;
 
       main.querySelector('.icon').textContent = this.icon;
       main.querySelector('.title').value = this.title;
+
+      if (this.category.frontmatter().background) {
+        document.querySelector('aside').style.backgroundImage = `url(${this.category.frontmatter().background})`;
+      } else {
+        document.querySelector('aside').style.backgroundImage = null;
+      }
 
       const content = main.querySelector('.content');
       content.innerHTML = ''; // reset
@@ -394,6 +425,25 @@ class Section {
 }
 
 class Task {
+  static template = createTemplate(`<div class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></div>`);
+  static createElement(task) {
+    const clone = Task.template.cloneNode(true).content.firstElementChild;
+
+    const titleElement = clone.querySelector('.title');
+    const checkboxElement = clone.querySelector('input[type="checkbox"]');
+
+    titleElement.textContent = task.title;
+    checkboxElement.checked = task.checked;
+
+    // clone.querySelector('.icon').textContent = section.icon;
+    // clone.querySelector('.title').value = section.title;
+
+    // clone.addEventListener('click', () => section.select());
+    // clone.querySelector('.title').addEventListener('change', e => section.title = e.target.value);
+
+    return clone;
+  }
+
   title;
   done;
   node;
@@ -414,9 +464,12 @@ class Task {
     checkboxElement.addEventListener('change', (e) => {
       if (e.target.checked) {
         titleElement.classList.add('checked');
+        this.#shadowNode.querySelector('input[type="checkbox"]').checked = true;
       } else {
         titleElement.classList.remove('checked');
+        this.#shadowNode.querySelector('input[type="checkbox"]').checked = false;
       }
+      this.#category.save();
     });
 
     titleElement.classList.add('strike');

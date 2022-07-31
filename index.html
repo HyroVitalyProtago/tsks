@@ -7,11 +7,32 @@
     <script type="text/javascript" src="category.js"></script>
     <script type="text/javascript" src="js-yaml.min.js"></script>
     <style>
+
+      /* width */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      /* Track */
+      ::-webkit-scrollbar-track {
+        background: rgb(46,54,69);
+      }
+
+      /* Handle */
+      ::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,.4);
+      }
+
+      /* Handle on hover */
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(140,140,140,0.1);
+      }
+
       :root{
-        /* scrollbar-face-color: rgb(210,210,210);
+        scrollbar-face-color: rgb(210,210,210);
         scrollbar-track-color: rgb(46,54,69);
         scrollbar-color: rgba(0,0,0,.4) rgba(140,140,140,0.1);
-        scrollbar-width: thin; */
+        scrollbar-width: thin;
       }
     
       @media (prefers-color-scheme: dark) {
@@ -70,7 +91,7 @@
         min-width: 260px;
         display: flex;
         flex-direction: column;
-        resize: horizontal;
+        /* resize: horizontal; */
       }
 
       nav h1 {
@@ -106,7 +127,7 @@
       }
 
       main {
-        padding: 15px;
+        margin: 15px;
         /*width: 100%;*/
         flex-grow: 17;
         /* color: #1A1929; */
@@ -300,19 +321,19 @@
         color: var(--link-color);
       }
 
-      .new-task {
+      #new-task {
         margin-top: .7em;
       }
 
-      .new-task input[type="checkbox"] {
+      #new-task input[type="checkbox"] {
         opacity: .5;
       }
 
-      .new-task input[type="text"] {
+      #new-task input[type="text"] {
         opacity: .5;
       }
 
-      .new-task input[type="text"]:focus {
+      #new-task input[type="text"]:focus {
         opacity: 1;
       }
 
@@ -337,11 +358,11 @@
       <section>
         <header></header>
         <h1><span class="icon"></span><input type="text" class="title" value="..." size="20" /></h1>
-        <h2>
+        <!-- <h2>
           <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
-        </h2>
+        </h2> -->
         
-        <div class="new-task">
+        <div id="new-task">
           <input type="checkbox" disabled/><input type="text" placeholder="Nouvelle tâche"/>
         </div>
         <div class="content">
@@ -497,6 +518,7 @@
 
       // TODO emoji picker for sections
       // https://emoji.julien-marcou.fr/
+      // => Cmd + Ctrl + Space
 
       const btnAddCategory = document.querySelector('.btn-add-category');
       async function newCategory() {
@@ -513,6 +535,16 @@
         todayDefaultSection.title = "Aujourd'hui";
         todayDefaultSection.select();
       }
+
+      const newTaskInput = document.querySelector('#new-task input[type="text"]');
+      newTaskInput.addEventListener('keypress', e => {
+        if (e.keyCode == 13) { // enter
+          if (e.target.value.length > 0) {
+            Category.currentSection.newTask(e.target.value);
+            e.target.value = '';
+          }
+        }
+      });
 
       /*
       const action = {
