@@ -21,7 +21,7 @@ class Category {
     for (let i = 0; i < children.length; i++) {
       children[i] = await Category.fromFile(children[i]);
     }
-    return children;
+    return children.sort((a,b) => a.order - b.order);
   }
   static async nextOrder() {
     return Math.max(0, ...(await Category.all()).map(category => category.order))+1;
@@ -76,9 +76,9 @@ class Category {
     clone.category = category;
     //clone.setAttribute('title', category.title);
     clone.querySelector('.title').value = category.title;
-    if (category.order) {
-      clone.style.order = category.order;
-    }
+    // if (category.order) {
+    //   clone.style.order = category.order;
+    // }
 
     const toggleFolding = (e) => {
       // hide next ul element
@@ -106,7 +106,7 @@ class Category {
       h1.textContent = `${section.icon} ${section.title}`;
       category.#markdom.body.appendChild(h1);
       console.log(category.#markdom.html());
-      const sectionElement = Section.createElement(section, category);
+      const sectionElement = Section.createElement(section);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
       sectionElement.querySelector('.title').select();
     }
@@ -117,7 +117,7 @@ class Category {
 
     category.sections().forEach(section => {
       if (section.title === undefined) return;
-      const sectionElement = Section.createElement(section, category);
+      const sectionElement = Section.createElement(section);
       clone.querySelector('ul').appendChild(sectionElement);
     });
 
@@ -130,8 +130,8 @@ class Category {
   #matter = '';
   #markdom;
   #sections;
-  #groups;
-  #tasks;
+  // #groups;
+  // #tasks;
   #loaded = false;
   constructor(file) {
     this.#file = file;
@@ -206,23 +206,14 @@ class Category {
 
     // content parsing into dom
     this.#markdom = markdownParse(this.#matter);
-    // console.log(this.#markdom);
     this.#sections = [new Section(null, this)]; // default section at the beginning of the document before the first
     this.#markdom.body.childNodes.forEach(child => {
       if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
-      if (child.nodeName === 'H1') return this.#sections.push(new Section(child.textContent, this));
-      if (child.nodeName === 'SPAN') {
-        return this.#sections[this.#sections.length-1].appendTask(new Task(
-          child.querySelector('.title').innerHTML,
-          child.querySelector('input[type="checkbox"]').checked,
-          child
-        ));
+      if (child.nodeName === 'H1') return this.#sections.push(new Section(child, this));
+      if (child.nodeName === 'DIV') {
+        return this.#sections[this.#sections.length-1].appendTask(new Task(child, this));
       }
     });
-    // console.log(this.#sections);
-
-    // console.log(this.#matter);
-    // console.log(this.#markdom.html());
 
     this.#loaded = true;
   }
@@ -230,41 +221,15 @@ class Category {
   markdom() { return this.#markdom; }
   
   async save() {
-    // TODO recompute matter
-    /*
-    const groups = [...content.matchAll(/^## (.*)$/gm)];
-    const tasks = [...content.matchAll(/^([ \t]*)\- \[([ x])\] (.*)$/gm)];
-    tasks.forEach(m => {
-      const group = groups.filter(t => t.index < m.index).last();
-      m.title = group[1];
-      if (!group.tasks) group.tasks = [];
-      group.tasks.push(m);
-    });
-    //console.log(tasks)
-    //console.log(groups);
-
-    // TODO? keep groups even if there is no tasks in it
-    // example
-    // from tasks to md
-    const begin = content.split('##')[0]; // keep the beginning of the file
-    let currentGroup;
-    const md = tasks.reduce((acc, task) => {
-      let ret = '';
-      if (currentGroup !== task.title) {
-        if (currentGroup) ret += '\n'; // not on the first one
-        currentGroup = task.title;
-        ret += `## ${currentGroup}\n`;
-      }
-      ret += `${task[1]}- [${task[2]}] ${task[3]}\n`;
-      return acc + ret;
-    }, begin);
-    */
-
     // New file
     if (Object.keys(this.#frontmatter).length <= 0) {
       this.#frontmatter.order = await Category.nextOrder();
-      this.#frontmatter.uuid = crypto.randomUUID(); // TODO useful?
+      //this.#frontmatter.uuid = crypto.randomUUID(); // TODO useful?
     }
+
+    // TODO replace this.#matter with this.#markdom.html()
+    console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
+    console.log(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#markdom.html());
 
     return this.#file.write(`---\n${jsyaml.dump(this.#frontmatter)}---\n\n`+this.#matter);
   }
@@ -278,14 +243,15 @@ const markdownParse = (text) => {
 		.replace(/\*\*(.*)\*\*/gim, '<b>$1</b>') // bold text
 		.replace(/\*(.*)\*/gim, '<i>$1</i>') // italic text
 
-    .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `$1<span class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></span>`) // tasks
+    // links
+    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a target="_blank" href="$2">$1</a>')
+    .replace(/ (http.*)(\s)/gim, ' <a target="_blank" href="$1" data-type="simple">$1</a>$2')
+
+    // tasks
+    .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `$1<div class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></div>`)
     .replaceAll('checked="x"', 'checked')
     .replaceAll('checked=" "', '')
-
-    .replace(/\[([^\]]*)\]\(([^\)]*)\)/gim, '<a target="_blank" href="$2">$1</a>') // links
-    .replace(/ (http.*)\s/gim, ' <a target="_blank" href="$1">$1</a>') // links
-	  /*.trim()*/, 'text/html'); // using trim method to remove whitespace
-  // console.log(dom.body.innerHTML);
+	  , 'text/html');
 
   // const treeWalker = document.createTreeWalker(dom.body);
   // let currentNode = treeWalker.currentNode;
@@ -317,12 +283,9 @@ const markdownParse = (text) => {
     
     let currentNode = treeWalker.currentNode;
     while(currentNode) {
-      // console.log(currentNode);
-      // console.log(currentNode.nodeName);
-
       // TODO (sub)task indentation
       if (currentNode.nodeName === "H1") {
-        html += `# ${currentNode.textContent}\n`;
+        html += `# ${currentNode.textContent}`;
         currentNode = treeWalker.nextNode(); // pass next text node
       } else if (currentNode.nodeName === "B") {
         html += `**${currentNode.textContent}**`;
@@ -333,7 +296,11 @@ const markdownParse = (text) => {
           html += `- [${checked}] `;
         }
       } else if (currentNode.nodeName === "A") {
-        html += `[${currentNode.href}](${currentNode.textContent})`;
+        if (currentNode.getAttribute('data-type')) {
+          html += `${currentNode.href}`;
+        } else {
+          html += `[${currentNode.href}](${currentNode.textContent})`;
+        }
         currentNode = treeWalker.nextNode(); // pass next text node
       } else if (currentNode.nodeName === "#text") {
         html += currentNode.nodeValue;
@@ -344,8 +311,6 @@ const markdownParse = (text) => {
 
     return html;
   }
-  // dom.html();
-  // console.log(dom.html());
 
   return dom;
 }
@@ -357,16 +322,12 @@ class Section {
     <input class="title" type="text" size="14" />
   </li>
   `);
-  static createElement(section, category) {
+  static createElement(section) {
     const clone = Section.template.cloneNode(true).content.firstElementChild;
 
     clone.section = section;
     clone.querySelector('.icon').textContent = section.icon;
     clone.querySelector('.title').value = section.title;
-
-    // const select = () => {
-      
-    // }
   
     const updateTitle = async (e) => {
       const target = e.target;
@@ -381,19 +342,38 @@ class Section {
   }
 
   icon;
-  title;
+  #title;
   // groups;
   tasks = [];
   category;
-  constructor(name, category) {
-    if (name === null) {
+
+  #shadowNode;
+  constructor(node, category) {
+    this.#shadowNode = node;
+    this.category = category;
+
+    if (node === null) {
       // TODO
     } else {
+      const name = node.textContent;
       const values = name.split(' ');
       this.icon = values.length > 1 ? values[0] : '📁';
-      this.title = values.length > 1 ? values[1] : values[0];
+      this.#title = values.length > 1 ? values[1] : values[0];
     }
-    this.category = category;
+  }
+
+  get title() {
+    return this.#title;
+  }
+
+  set title(value) {
+    // TODO check value
+    this.#title = value;
+    // if (this.#selected) main.querySelector('.title').value = this.title;
+    if (this.#shadowNode !== null) {
+      this.#shadowNode.textContent = `${this.icon} ${this.#title}`; 
+      this.category.save();
+    }
   }
 
   appendTask(task) {
@@ -409,14 +389,7 @@ class Section {
 
       const content = main.querySelector('.content');
       content.innerHTML = ''; // reset
-      const ul = document.createElement('ul');
-      content.appendChild(ul);
-      this.tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.appendChild(task.node);
-        ul.appendChild(li);
-      });
-      // console.log(category.markdom().body);
+      this.tasks.forEach(task => content.appendChild(task.node));
   }
 }
 
@@ -425,15 +398,18 @@ class Task {
   done;
   node;
   #shadowNode;
-  constructor(title, done, node) {
-    this.title = title;
-    this.done = done;
+  #category;
+  constructor(node, category) {
     this.#shadowNode = node;
+    this.#category = category;
     this.node = node.cloneNode(true);
     
     const titleElement = this.node.querySelector('.title');
     const checkboxElement = this.node.querySelector('input[type="checkbox"]');
     
+    this.title = titleElement.textContent;
+    this.done = checkboxElement.checked;
+
     if (checkboxElement.checked) titleElement.classList.add('checked');
     checkboxElement.addEventListener('change', (e) => {
       if (e.target.checked) {
@@ -458,6 +434,9 @@ class Task {
       if (!titleElement.hasAttribute('contenteditable')) return;
       titleElement.removeAttribute('contenteditable');
       // parse content to display
+      // console.log(e.target.textContent);
+      this.#shadowNode.innerHTML = this.node.innerHTML;
+      this.#category.save();
     });
 
     // TODO update shadowNode

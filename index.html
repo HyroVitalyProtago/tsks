@@ -34,7 +34,7 @@
           --nav-background-color: #F9F9FB;
           --nav-section-background-color: #EBEAF0;
           --section-background-color: var(--nav-background-color);
-          --text-color: #1A1929;
+          --text-color: 26, 25, 41;
           --border-color: #ddd;
           --search-background: #EBEAF0;
           --link-color: blue;
@@ -299,6 +299,26 @@
       a {
         color: var(--link-color);
       }
+
+      .new-task {
+        margin-top: .7em;
+      }
+
+      .new-task input[type="checkbox"] {
+        opacity: .5;
+      }
+
+      .new-task input[type="text"] {
+        opacity: .5;
+      }
+
+      .new-task input[type="text"]:focus {
+        opacity: 1;
+      }
+
+      .task {
+        margin-top: .3em;
+      }
     </style>
   </head>
   <body>
@@ -321,6 +341,9 @@
           <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
         </h2>
         
+        <div class="new-task">
+          <input type="checkbox" disabled/><input type="text" placeholder="Nouvelle tâche"/>
+        </div>
         <div class="content">
           <!-- <input type="checkbox" /><input type="text" value="News (RSS Reader, Twitter, Weather)" style="width: 80%;"/>
           <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
