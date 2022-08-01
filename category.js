@@ -4,6 +4,27 @@ function createTemplate(html) {
   return ret;
 }
 
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+// Helpers
+// function selectElementContents(el) {
+//   var range = document.createRange();
+//   range.selectNodeContents(el);
+//   var sel = window.getSelection();
+//   sel.removeAllRanges();
+//   sel.addRange(range);
+// }
+// function insertAfter(newNode, referenceNode) {
+//   referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+// }
+// if (!Array.prototype.last){
+//   Array.prototype.last = function(){
+//     return this[this.length - 1];
+//   };
+// };
+
 // A category is store as a markdown file on webdav
 class Category {
 

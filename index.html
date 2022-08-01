@@ -13,28 +13,6 @@
         width: 8px;
       }
 
-      /* Track */
-      ::-webkit-scrollbar-track {
-        background: rgb(46,54,69);
-      }
-
-      /* Handle */
-      ::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,.4);
-      }
-
-      /* Handle on hover */
-      ::-webkit-scrollbar-thumb:hover {
-        background: rgba(140,140,140,0.1);
-      }
-
-      :root{
-        scrollbar-face-color: rgb(210,210,210);
-        scrollbar-track-color: rgb(46,54,69);
-        scrollbar-color: rgba(0,0,0,.4) rgba(140,140,140,0.1);
-        scrollbar-width: thin;
-      }
-    
       @media (prefers-color-scheme: dark) {
         :root {
           --background-color: #202124; /* black */
@@ -46,6 +24,26 @@
           --search-background: var(--nav-background-color);
           --link-color: rgb(172, 172, 255);
           --strike-color: rgb(104, 133, 236);
+
+          scrollbar-face-color: rgb(210,210,210);
+          scrollbar-track-color: rgb(46,54,69);
+          scrollbar-color: rgba(0,0,0,.4) rgba(140,140,140,0.1);
+          scrollbar-width: thin;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+          background: rgb(46,54,69);
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+          background: rgba(0,0,0,.4);
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(140,140,140,0.1);
         }
       }
 
@@ -365,73 +363,12 @@
         <div id="new-task">
           <input type="checkbox" disabled/><input type="text" placeholder="Nouvelle tâche"/>
         </div>
-        <div class="content">
-          <!-- <input type="checkbox" /><input type="text" value="News (RSS Reader, Twitter, Weather)" style="width: 80%;"/>
-          <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
-          <ul>
-            <li>
-              <input type="checkbox" />News (RSS Reader, Twitter, Weather)
-              <ul>
-                <li><input type="checkbox" />Mails</li>
-                <li><input type="checkbox" />Messages</li>
-              </ul>
-            </li>
-            <li><input type="checkbox" />Calendar</li>
-          </ul>
-        
-          <h2><button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>POC Future AR Life Use<span class="badge">0/6</span></h2>
-          <ul>
-            <li>
-              <input type="checkbox" />News (RSS Reader, Twitter, Weather)
-              <ul>
-                <li><input type="checkbox" />Mails</li>
-                <li><input type="checkbox" />Messages</li>
-              </ul>
-            </li>
-            <li><input type="checkbox" />Calendar</li>
-          </ul> -->
-        </div>
+        <div class="content"></div>
       </section>
     </main>
     <aside></aside>
 
-    <!-- Templates -->
-    <template id="t-category">
-      <section id="c{{id}}">
-        <h1>
-          <span class="icon btn-toggle-folding" onclick="action.toggleFolding(this)">▾</span>
-          <input type="text" class="title" onchange="action.category.update(event)" value="{{title}}" size="10"/>
-          <button class="btn-add-section" onclick="action.section.create(this);"></button>
-        </h1>
-        <ul>
-          <!-- sections -->
-        </ul>
-      </section>
-    </template>
-    <template id="t-section">
-      <li id="s{{id}}" onclick="action.section.select(this)">
-        <span class="icon">{{icon}}</span>
-        <input type="text" class="title" oninput="action.section.update(event)" value="{{title}}" size="14" />
-      </li>
-    </template>
-    <template id="t-task">
-      <li id="t{{id}}" class="task">
-          <input type="checkbox" onclick="action.task.onChecked(this)" />
-          <input type="text" class="title" value="{{title}}" />
-      </li>
-    </template>
-    <template id="t-main">
-      <section>
-        <header></header>
-        <h1><input type="text" class="title" value="{{title}}" /></h1>
-        <h2>
-          <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
-        </h2>
-        
-        <!-- groups -->
-      </section>
-    </template>
-    <template id="t-group">
+    <!-- <template id="t-group">
       <div class="group">
         <h2>
           <button class="lighter btn-toggle-folding" onclick="action.toggleFolding(this)">▾</button>
@@ -449,72 +386,19 @@
           <li><input type="checkbox" />Calendar</li>
         </ul>
       </div>
-    </template>
+    </template> -->
 
     <script>
-      if (!Array.prototype.last){
-        Array.prototype.last = function(){
-          return this[this.length - 1];
-        };
-      };
-
       // Load data (local-first, webdav compatible, gun db? maybe only for public sharing...)
-      const TYPE = {
-        CATEGORY: 'c', // file
-        SECTION: 's', // h1
-        GROUP: 'g', // h2
-        TASK: 't', // - [ ]
-      }
+      // const TYPE = {
+      //   CATEGORY: 'c', // file
+      //   SECTION: 's', // h1
+      //   GROUP: 'g', // h2
+      //   TASK: 't', // - [ ]
+      // }
 
       const nav = document.querySelector('nav');
       const main = document.querySelector('main');
-      /*const categoryTemplate = document.querySelector('#t-category');
-      const sectionTemplate = document.querySelector('#t-section');
-      const taskTemplate = document.querySelector('#t-task');
-      const create = (template) => {
-        return (data) => {
-          const clone = template.cloneNode(true);
-          Object.entries(data).forEach(([key, value]) => {
-            // TODO auto update on value change with span class key
-            // const str = `\{\{${key}\}\}`;
-            // const reg = new RegExp(str, 'i');
-            
-            // let match;
-            // while (match = clone.innerHTML.match(reg)) {
-            //   clone.innerHTML = clone.innerHTML.substring(0,match.index) + value + clone.innerHTML.substring(match.index+str.length);
-            // }
-
-            // const update = (value) => clone.querySelectorAll(`.${key}`).forEach(e => e.textContent = value);
-            // ui.category.addEventListener(`update-${key}`, update);
-            // update(value);
-
-            clone.innerHTML = clone.innerHTML.replaceAll('{{'+key+'}}', value); // TODO replaceAll polyfill
-          });
-          return clone.content.firstElementChild;
-        };
-      };
-      const ui = {
-        category: {
-          template: categoryTemplate,
-          create: create(categoryTemplate),
-          update: () => {},
-        },
-        section: {
-          template: sectionTemplate,
-          create: create(sectionTemplate),
-          select: (data) => {
-            // TODO update main
-            console.log(main.querySelector('.title'))
-            main.querySelector('.title').value = data.title;
-          },
-          update: (data) => {
-            if (location.href.includes('#s'+data.id)) { // selected
-              main.querySelector('.title').value = data.title;
-            }
-          }
-        }
-      };
-      */
 
       // TODO emoji picker for sections
       // https://emoji.julien-marcou.fr/
@@ -545,75 +429,8 @@
           }
         }
       });
-
-      /*
-      const action = {
-        category: {
-          create: async (e) => {
-            const data = await Category.create();
-            // const data = await db.category.create();
-            const category = ui.category.create({title: data.title, id: data.title});
-            if (data.order) {
-              category.style.order = data.order;
-            }
-            e.parentNode.insertBefore(category, e); // insert before add category button
-            category.querySelector('.title').select();
-          },
-          update: async (e) => {
-            const target = e.target;
-            if (target.classList.contains('title')) {
-              const categoryName = target.closest('section').id.substring(1);
-              const category = await Category.get(categoryName);
-              try {
-                await category.rename(target.value);
-                target.closest('section').id = `c${target.value}`;
-              } catch(e) {
-                console.error(e);
-                target.value = categoryName;
-              }
-            //   db.category.update(target.closest('section').id, 'title', target.value);
-            }
-          }
-        },
-        section: {
-          create: async (e) => {
-            // const categoryName = e.closest('section').id.substring(1);
-            // const category = await Category.get(categoryName);
-            // console.log(category);
-            // const sectionData = category.appendSection('Section');
-            // // const data = await db.section.create();
-            // const section = ui.section.create({title: sectionData.title, id: sectionData.title});
-            // e.closest('section').querySelector('ul').appendChild(section); // append li at the end of ul
-            // section.querySelector('.title').select();
-          },
-          select: async (e) => {
-            // if (location.href.includes('#'+e.id)) return; // already selected
-            // location.href = '#'+e.id;
-            // const data = await db.section.select(e.id);
-            // ui.section.select(data);
-          },
-          update: async (e) => {
-            // const target = e.target;
-            // if (target.classList.contains('title')) {
-            //   const sid = target.closest('li').id;
-            //   db.section.update(sid, 'title', target.value);
-            //   ui.section.update(await db.section.select(sid));
-            // }
-          }
-        },
-        filter: (e) => {},
-        // search
-        toggleFolding: (e) => {
-          // hide next ul element
-          const nextUlElement = e.parentElement.nextElementSibling;
-          nextUlElement.style.display = nextUlElement.style.display === 'none' ? null : 'none';
-
-          // change icon
-          e.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
-        },
-      }
-      */
       
+      // Start
       const wd = document.querySelector('webdav-form');
       const onWebdavConnect = async () => {
         fs = wd.fs;
@@ -630,21 +447,6 @@
         onWebdavConnect();
       } else {
         wd.addEventListener('connect', onWebdavConnect);
-      }
-
-      // Helpers
-      function selectElementContents(el) {
-        var range = document.createRange();
-        range.selectNodeContents(el);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
-      function insertAfter(newNode, referenceNode) {
-        referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
-      }
-      function capitalizeFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
       }
     </script>
   </body>
