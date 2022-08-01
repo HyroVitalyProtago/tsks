@@ -94,12 +94,8 @@ class Category {
   static createElement(category) {
     const clone = Category.template.cloneNode(true).content.firstElementChild;
 
-    clone.category = category;
-    //clone.setAttribute('title', category.title);
+    // clone.category = category;
     clone.querySelector('.title').value = category.title;
-    // if (category.order) {
-    //   clone.style.order = category.order;
-    // }
 
     const toggleFolding = (e) => {
       // hide next ul element
@@ -108,6 +104,8 @@ class Category {
   
       // change icon
       e.target.textContent = nextUlElement.style.display === 'none' ? '▸' : '▾';
+
+      // TODO update frontmatter ? or 
     }
   
     const updateTitle = async (e) => {
@@ -129,7 +127,7 @@ class Category {
       const section = new Section(h1, category);
       category.#sections.push(section);
       
-      console.log(category.#markdom.html());
+      // console.log(category.#markdom.html());
 
       const sectionElement = Section.createElement(section);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
@@ -188,7 +186,7 @@ class Category {
   get title() { return capitalizeFirstLetter(decodeURI(this.#file.name).replace(/\..*$/, '')); }
   // set title(value) {}
   frontmatter() { return this.#frontmatter; }
-  content() { return this.#content; } // frontmatter + matter
+  // content() { return this.#content; } // frontmatter + matter
   matter() { return this.#matter; }
 
   // TODO
@@ -229,7 +227,7 @@ class Category {
     } else {
       // setup frontmatter
       this.#frontmatter.order = await Category.nextOrder();
-      this.#frontmatter.uuid = crypto.randomUUID(); // TODO useful?
+      // this.#frontmatter.uuid = crypto.randomUUID(); // TODO useful?
       this.#matter = this.#content;
     }
 

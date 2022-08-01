@@ -413,11 +413,12 @@
       }
 
       async function today() {
-        const today = await Category.today();
-        const todayDefaultSection = today.sections()[0];
-        todayDefaultSection.icon = '📆';
-        todayDefaultSection.title = "Aujourd'hui";
-        todayDefaultSection.select();
+        (await Category.today()).sections()[1].select();
+        // const today = await Category.today();
+        // const todayDefaultSection = today.sections()[0];
+        // todayDefaultSection.icon = '📆';
+        // todayDefaultSection.title = "Aujourd'hui";
+        // todayDefaultSection.select();
       }
 
       const newTaskInput = document.querySelector('#new-task input[type="text"]');
