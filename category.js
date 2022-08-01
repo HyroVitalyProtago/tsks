@@ -235,8 +235,12 @@ class Category {
     this.#markdom = markdownParse(this.#matter);
     this.#sections = [new Section(null, this)]; // default section at the beginning of the document before the first
     this.#markdom.body.childNodes.forEach(child => {
+      // TODO ul/li for task and subtasks
+      // const level = (child.nodeValue.match(/\t/g) || []).length;
+
       if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
       if (child.nodeName === 'H1') return this.#sections.push(new Section(child, this));
+      // if (child.nodeName === 'H2') Groups
       if (child.nodeName === 'DIV') return this.#sections[this.#sections.length-1].appendTask(new Task(child, this));
     });
 
@@ -276,29 +280,7 @@ const markdownParse = (text) => {
     .replace(/^([ \t]*)\- \[([ x])\] (.*)$/gim, `$1<div class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></div>`)
     .replaceAll('checked="x"', 'checked')
     .replaceAll('checked=" "', '')
-	  , 'text/html');
-
-  // const treeWalker = document.createTreeWalker(dom.body);
-  // let currentNode = treeWalker.currentNode;
-  // while(currentNode) {
-  //   // console.log(currentNode);
-  //   // console.log(currentNode.nodeName);
-
-  //   // TODO (sub)task indentation
-    
-  //   if (currentNode.nodeName === "#text") {
-  //     const level = (currentNode.data.match(/\t/g) || []).length;
-  //     const ul = document.createElement('ul');
-  //     // ul.level = level;
-  //     const li = document.createElement('li');
-  //     li.appendChild(currentNode.nextSibling);
-  //     ul.appendChild(li);
-  //   }
-
-  //   currentNode = treeWalker.nextNode();
-  // }
-
-  // console.log(dom.body);
+	  , 'text/html');  
 
   dom.html = () => {
     let html = '';
@@ -311,6 +293,9 @@ const markdownParse = (text) => {
       // TODO (sub)task indentation
       if (currentNode.nodeName === "H1") {
         html += `# ${currentNode.textContent}`;
+        currentNode = treeWalker.nextNode(); // pass next text node
+      } else if (currentNode.nodeName === "H2") {
+        html += `## ${currentNode.textContent}`;
         currentNode = treeWalker.nextNode(); // pass next text node
       } else if (currentNode.nodeName === "B") {
         html += `**${currentNode.textContent}**`;
