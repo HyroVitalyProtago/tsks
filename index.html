@@ -23,7 +23,7 @@
           --border-color: #5f6368;
           --search-background: var(--nav-background-color);
           --link-color: rgb(172, 172, 255);
-          --strike-color: rgb(104, 133, 236);
+          --strike-color: rgb(104, 157, 236);
 
           scrollbar-face-color: rgb(210,210,210);
           scrollbar-track-color: rgb(46,54,69);
@@ -131,6 +131,7 @@
         /* color: #1A1929; */
         min-width: 340px;
         height: 100%;
+        overflow-x: hidden;
         overflow-y: auto;
       }
 
@@ -138,6 +139,7 @@
         background: var(--section-background-color);
         border-radius: 15px;
         padding: 25px;
+        margin-bottom: 25px;
         font-size: 1.25em;
       }
 
@@ -148,7 +150,7 @@
 
       main section h2 {
         margin: 0;
-        margin-top: 10px;
+        margin-top: .6em;
       }
 
       main section > ul {
@@ -202,7 +204,7 @@
       }
 
       input[type="search"] {
-        border: none;
+        border: solid var(--border-color) 1px;
         background: var(--search-background) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' class='bi bi-search' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'%3E%3C/path%3E%3C/svg%3E") no-repeat 13px center;
         border-radius: 15px;
         padding: 10px 15px 10px 40px;
@@ -313,6 +315,9 @@
       .checked {
         --strike: 1;
         color: rgba(var(--text-color), .5);
+
+        /* TODO only at the end of strike animation */
+        /* text-decoration: line-through var(--strike-color) .2em; */
       }
 
       a {
@@ -338,6 +343,41 @@
       .task {
         margin-top: .3em;
       }
+
+      /* .task:hover::before {
+        content: "≡";
+        position: absolute;
+        transform: translate(-.9em, -0em);
+      } */
+
+      /* Custom checkbox https://moderncss.dev/pure-css-custom-checkbox-style/ */
+      input[type="checkbox"] {
+        appearance: none;
+        background-color: var(--background-color);
+        margin: 0;
+        margin-right: .5em;
+        font: inherit;
+        color: currentColor;
+        width: 1em;
+        height: 1em;
+        border-radius: 0.15em;
+        /* display: grid; */
+        place-content: center;
+        display: inline-grid;
+      }
+      input[type="checkbox"]::before {
+        content: "";
+        width: 0.65em;
+        height: 0.65em;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
+        box-shadow: inset 1em 1em var(--strike-color);
+        transform-origin: bottom left;
+        clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+      }
+      input[type="checkbox"]:checked::before {
+        transform: scale(1);
+      }
     </style>
   </head>
   <body>
@@ -360,8 +400,8 @@
           <button class="badge interactive overdue" onclick="action.filter(this)">1 en retard</button>
         </h2> -->
         
-        <div id="new-task">
-          <input type="checkbox" disabled/><input type="text" placeholder="Nouvelle tâche"/>
+        <div id="new-task" class="task">
+          <input type="checkbox" disabled /><input type="text" placeholder="Nouvelle tâche" />
         </div>
         <div class="content"></div>
       </section>

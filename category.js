@@ -234,14 +234,15 @@ class Category {
     // content parsing into dom
     this.#markdom = markdownParse(this.#matter);
     this.#sections = [new Section(null, this)]; // default section at the beginning of the document before the first
+    let currentIndentationLevel = 0;
     this.#markdom.body.childNodes.forEach(child => {
-      // TODO ul/li for task and subtasks
-      // const level = (child.nodeValue.match(/\t/g) || []).length;
-
-      if (child.nodeName === '#text' && child.nodeValue.trim() === '') return;
+      if (child.nodeName === '#text' && child.nodeValue.trim() === '') {
+        currentIndentationLevel = (child.nodeValue.match(/\t/g) || []).length;
+        return;
+      }
       if (child.nodeName === 'H1') return this.#sections.push(new Section(child, this));
       // if (child.nodeName === 'H2') Groups
-      if (child.nodeName === 'DIV') return this.#sections[this.#sections.length-1].appendTask(new Task(child, this));
+      if (child.nodeName === 'DIV') return this.#sections[this.#sections.length-1].appendTask(new Task(child, this, currentIndentationLevel));
     });
 
     this.#loaded = true;
@@ -424,7 +425,23 @@ class Section {
 
       const content = main.querySelector('.content');
       content.innerHTML = ''; // reset
-      this.tasks.forEach(task => content.appendChild(task.node));
+      // console.log(this.#shadowNode.parentNode);
+
+      let node = this.#shadowNode.nextSibling;
+      while (node) {
+        if (node.nodeName === 'H1') break;
+        
+        if (node.nodeName === 'H2') { // Group
+          content.appendChild(node.cloneNode(true));
+        } else if (node.nodeName === 'DIV') { // Task
+          // console.log(node);
+          content.appendChild(node.task.node)
+        }
+
+        node = node.nextSibling;
+      }
+
+      // this.tasks.forEach(task => content.appendChild(task.node));
   }
 }
 
@@ -453,16 +470,27 @@ class Task {
   node;
   #shadowNode;
   #category;
-  constructor(node, category) {
+  constructor(node, category, indentationLevel) {
+    node.task = this;
     this.#shadowNode = node;
     this.#category = category;
     this.node = node.cloneNode(true);
+    this.node.task = this;
+    this.node.draggable = "true";
     
+    if (indentationLevel > 0) {
+      this.node.style.marginLeft = `${indentationLevel*1.5}em`;
+    }
+
     const titleElement = this.node.querySelector('.title');
     const checkboxElement = this.node.querySelector('input[type="checkbox"]');
     
     this.title = titleElement.textContent;
     this.done = checkboxElement.checked;
+    this.archived = this.title.includes('🪦');
+    if (this.archived) {
+      this.node.style.display = 'none';
+    }
 
     if (checkboxElement.checked) titleElement.classList.add('checked');
     checkboxElement.addEventListener('change', (e) => {
@@ -496,6 +524,53 @@ class Task {
       this.#category.save();
     });
 
-    // TODO update shadowNode
+    const getTarget = (e) => {
+      if (e.target.draggable && e.target.classList.contains('task')) {
+        return e.target;
+      } else {
+        return e.target.closest('.task[draggable]');
+      }
+    }
+    this.node.addEventListener('dragstart', e => {
+      const id = crypto.randomUUID();
+      e.target.id = id;
+      e.dataTransfer.setData("text", id);
+    });
+    this.node.addEventListener('drag', e => e.target.style.display = 'none');
+    this.node.addEventListener('dragend', e => e.target.style.display = null);
+    this.node.addEventListener('dragover', e => e.preventDefault());
+    this.node.addEventListener('dragenter', e => {
+      const target = getTarget(e);
+      if (!target) return;
+      
+      if (target.style.borderTop) { target.dragEnterCount = 1; }
+      target.style.borderTop = 'thick double #32a1ce';
+    });
+    this.node.addEventListener('dragleave', e => {
+      const target = getTarget(e);
+      if (!target) return;
+
+      if (target.dragEnterCount == 1) {
+        target.dragEnterCount = 0;
+        return;
+      }
+      target.style.borderTop = null;
+    });
+    this.node.addEventListener('drop', e => {
+      const target = getTarget(e);
+      if (!target) return;
+      
+      target.style.borderTop = null;
+      const data = e.dataTransfer.getData("text");
+      target.parentNode.insertBefore(document.getElementById(data), target);
+      
+      // update shadowdom
+      // document.getElementById(data).task.#shadowNode.nextElementSibling.textContent.replace('\n', '');
+      // target.task.#shadowNode.parentNode.insertBefore(document.getElementById(data).task.#shadowNode, target.task.#shadowNode);
+      // target.task.#shadowNode.parentNode.insertBefore(document.createTextNode('\n'), target.task.#shadowNode);
+      // target.task.#category.save();
+
+      e.dataTransfer.clearData();
+    });
   }
 }
