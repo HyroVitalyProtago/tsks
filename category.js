@@ -51,21 +51,11 @@ class Category {
     return Category.fromFile(Category.#webdav.file('tasks/today.md'));
   }
 
-  // static async get(id) {
-  //   const category = new Category(Category.#webdav.file(id));
-  //   await category.load();
-  //   return category;
-  // }
-
   static async fromFile(file) {
     const category = new Category(file);
     await category.load();
     return category;
   }
-
-  // static async get(name) {
-  //   return Category.fromFile(Category.#webdav.file(`tasks/${name}.md`));
-  // }
 
   static async create() {
     const file = Category.#webdav.file('tasks/Catégorie.md');
@@ -126,8 +116,6 @@ class Category {
 
       const section = new Section(h1, category);
       category.#sections.push(section);
-      
-      // console.log(category.#markdom.html());
 
       const sectionElement = Section.createElement(section);
       clone.querySelector('ul').appendChild(sectionElement); // append li at the end of ul
@@ -335,8 +323,9 @@ class Section {
   `);
   static createElement(section) {
     const clone = Section.template.cloneNode(true).content.firstElementChild;
-
+    
     clone.section = section;
+    clone.id = section.id();
     clone.querySelector('.icon').textContent = section.icon;
     clone.querySelector('.title').value = section.title;
 
@@ -408,9 +397,17 @@ class Section {
     this.select(); // reload ?
   }
 
+  id() {
+    return encodeURI(`${this.category.title}--${this.title}`);
+  }
+
   select() {
-      // if (location.href.includes('#'+e.id)) return; // already selected
-      // location.href = '#'+e.id;
+      // TODO only works if category and section title pair is unique...
+      const st = nav.scrollTop;
+      location.hash = encodeURI(`${this.category.title}--${this.title}`);
+      nav.scrollTop = st; // don't scroll anything
+      document.body.scrollTop = 0;
+
       Category.currentCategory = this.category;
       Category.currentSection = this;
 
@@ -425,7 +422,6 @@ class Section {
 
       const content = main.querySelector('.content');
       content.innerHTML = ''; // reset
-      // console.log(this.#shadowNode.parentNode);
 
       let node = this.#shadowNode.nextSibling;
       while (node) {
@@ -434,7 +430,6 @@ class Section {
         if (node.nodeName === 'H2') { // Group
           content.appendChild(node.cloneNode(true));
         } else if (node.nodeName === 'DIV') { // Task
-          // console.log(node);
           content.appendChild(node.task.node)
         }
 
@@ -564,11 +559,13 @@ class Task {
       const data = e.dataTransfer.getData("text");
       target.parentNode.insertBefore(document.getElementById(data), target);
       
-      // update shadowdom
-      // document.getElementById(data).task.#shadowNode.nextElementSibling.textContent.replace('\n', '');
-      // target.task.#shadowNode.parentNode.insertBefore(document.getElementById(data).task.#shadowNode, target.task.#shadowNode);
-      // target.task.#shadowNode.parentNode.insertBefore(document.createTextNode('\n'), target.task.#shadowNode);
-      // target.task.#category.save();
+      // update shadowdom (SN:ShadowNode)
+      const targetSN = target.task.#shadowNode;
+      const droppedSN = document.getElementById(data).task.#shadowNode;
+      droppedSN.nextSibling.textContent = droppedSN.nextSibling.textContent.replace('\n', '');
+      targetSN.parentNode.insertBefore(droppedSN, targetSN);
+      targetSN.parentNode.insertBefore(document.createTextNode('\n'), targetSN);
+      target.task.#category.save();
 
       e.dataTransfer.clearData();
     });

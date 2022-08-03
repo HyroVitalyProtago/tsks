@@ -131,6 +131,10 @@
         background: #5d5a8c19;
       }
 
+      nav ul li:target {
+        background-color: #191919;
+      }
+
       main {
         grid-area: main;
         margin: 15px;
@@ -486,12 +490,32 @@
         fs = wd.fs;
 
         Category.init(fs);
-        (await Category.all()).forEach(categoryData => {
+        const categories = await Category.all();
+        categories.forEach(categoryData => {
           const categoryElement = Category.createElement(categoryData);
           nav.insertBefore(categoryElement, btnAddCategory);
         })
 
-        today();
+        let goToday = true;
+        if (location.hash) {
+          const split = location.hash.substring(1).split('--');
+          if (split.length === 2) {
+            const categoryTitle = decodeURI(split[0]);
+            const sectionTitle = decodeURI(split[1]);
+            
+            // TODO today/urgent/important/...
+
+            const category = categories.find(c => c.title === categoryTitle);
+            if (category) {
+              const section = category.sections().find(s => s.title === sectionTitle);
+              if (section) {
+                section.select();
+                goToday = false;
+              }
+            }
+          }
+        }
+        if (goToday) today();
       };
       if (wd.isRemoteConnected) {
         onWebdavConnect();
