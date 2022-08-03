@@ -446,7 +446,7 @@ class Section {
 }
 
 class Task {
-  static template = createTemplate(`<div class="task"><input type="checkbox" checked="$2" /><span class="title">$3</span></div>`);
+  static template = createTemplate(`<div class="task"><input type="checkbox" /><span class="title"></span></div>`);
   static createElement(task) {
     const clone = Task.template.cloneNode(true).content.firstElementChild;
 
