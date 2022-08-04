@@ -260,7 +260,12 @@ customElements.define('webdav-form', class extends HTMLElement {
     sessionStorage.setItem('username', username);
     sessionStorage.setItem('password', password);
 
-    this.dispatchEvent(this.connectEvent);
+    // this.dispatchEvent(this.connectEvent);
+    this.connectEvent.webdav = this.fs;
     this.isRemoteConnected = true;
+
+    window.addEventListener('load', e => {
+      this.dispatchEvent(this.connectEvent);
+    });
   }
 });

@@ -24,6 +24,7 @@
           --search-background: var(--nav-background-color);
           --link-color: rgb(172, 172, 255);
           --strike-color: rgb(104, 157, 236);
+          --target-color: #191919;
 
           scrollbar-face-color: rgb(210,210,210);
           scrollbar-track-color: rgb(46,54,69);
@@ -58,6 +59,7 @@
           --search-background: #EBEAF0;
           --link-color: blue;
           --strike-color: blue;
+          --target-color: #c4c4c4;
         }
       }
 
@@ -124,7 +126,9 @@
       }
 
       nav ul li {
-        padding: 5px 15px 5px 15px;
+        padding-left: 15px;
+        padding-top: 4px;
+        padding-bottom: 4px;
       }
 
       nav ul li:hover {
@@ -132,7 +136,7 @@
       }
 
       nav ul li:target {
-        background-color: #191919;
+        background-color: var(--target-color);
       }
 
       main {
@@ -465,15 +469,6 @@
         categoryElement.querySelector('.title').select();
       }
 
-      async function today() {
-        (await Category.today()).sections()[1].select();
-        // const today = await Category.today();
-        // const todayDefaultSection = today.sections()[0];
-        // todayDefaultSection.icon = '📆';
-        // todayDefaultSection.title = "Aujourd'hui";
-        // todayDefaultSection.select();
-      }
-
       const newTaskInput = document.querySelector('#new-task input[type="text"]');
       newTaskInput.addEventListener('keypress', e => {
         if (e.keyCode == 13) { // enter
@@ -485,11 +480,8 @@
       });
       
       // Start
-      const wd = document.querySelector('webdav-form');
-      const onWebdavConnect = async () => {
-        fs = wd.fs;
-
-        Category.init(fs);
+      document.querySelector('webdav-form').addEventListener('connect', async (e) => {
+        Category.init(e.webdav);
         const categories = await Category.all();
         categories.forEach(categoryData => {
           const categoryElement = Category.createElement(categoryData);
@@ -515,13 +507,10 @@
             }
           }
         }
-        if (goToday) today();
-      };
-      if (wd.isRemoteConnected) {
-        onWebdavConnect();
-      } else {
-        wd.addEventListener('connect', onWebdavConnect);
-      }
+        if (goToday) {
+          (await Category.today()).sections()[1].select();
+        }
+      });
     </script>
   </body>
 </html>
