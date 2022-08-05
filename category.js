@@ -417,7 +417,7 @@ class Section {
       if (this.category.frontmatter().background) {
         document.querySelector('aside').style.backgroundImage = `url(${this.category.frontmatter().background})`;
       } else {
-        document.querySelector('aside').style.backgroundImage = null;
+        document.querySelector('aside').style.backgroundImage = `url("https://images8.alphacoders.com/992/992848.jpg")`;
       }
 
       const content = main.querySelector('.content');

@@ -242,6 +242,7 @@ customElements.define('webdav-form', class extends HTMLElement {
       this.shadowRoot.querySelector('#password').value = password;
       this.connect();
     }
+    window.addEventListener('load', e => this.windowLoaded = true);
   }
 
   connect() {
@@ -264,7 +265,9 @@ customElements.define('webdav-form', class extends HTMLElement {
     this.connectEvent.webdav = this.fs;
     this.isRemoteConnected = true;
 
-    window.addEventListener('load', e => {
+    if (this.windowLoaded) {
+      this.dispatchEvent(this.connectEvent);
+    } else window.addEventListener('load', e => {
       this.dispatchEvent(this.connectEvent);
     });
   }

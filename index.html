@@ -127,8 +127,7 @@
 
       nav ul li {
         padding-left: 15px;
-        padding-top: 4px;
-        padding-bottom: 4px;
+        line-height: 2em;
       }
 
       nav ul li:hover {
@@ -210,7 +209,7 @@
 
       aside {
         grid-area: aside;
-        background: url("https://images8.alphacoders.com/992/992848.jpg") no-repeat center center fixed;
+        background: rgba(0,0,0,0) no-repeat center center fixed;
         -webkit-background-size: cover;
         -moz-background-size: cover;
         -o-background-size: cover;
@@ -478,6 +477,10 @@
           }
         }
       });
+
+      async function today() {
+        (await Category.today()).sections()[1].select();
+      }
       
       // Start
       document.querySelector('webdav-form').addEventListener('connect', async (e) => {
@@ -507,9 +510,7 @@
             }
           }
         }
-        if (goToday) {
-          (await Category.today()).sections()[1].select();
-        }
+        if (goToday) today();
       });
     </script>
   </body>
