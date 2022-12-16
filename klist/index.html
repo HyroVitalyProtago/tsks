@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Tsks</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f9f9f9">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="text/javascript" src="webdav.js"></script>
+  <script type="text/javascript" src="js-yaml.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <!-- <link rel="manifest" href="manifest.json"> -->
+</head>
+
+<body>
+  <webdav-form></webdav-form>
+  <header>
+    <nav>
+      <ul>
+        <li title="home" onclick="filter('')"><button>📫 home</button></li>
+        <li title="work" onclick="filter('💼')"><button>💼 work</button></li>
+        <li title="urgent" onclick="filter('🔥')"><button>🔥 urgent</button></li>
+        <li title="important" onclick="filter('🎯')"><button>🎯 important</button></li>
+        <li title="archived" onclick="filter('🪦')"><button>🪦 archived</button></li>
+      </ul>
+    </nav>
+    <input type="search" id="search" placeholder="filtrer (ex: #work, ...)" onkeyup="search(event)" />
+    <button id="createSectionButton" onclick="createSectionButtonClick()" title="Créer une liste de tâche">+ créer une
+      liste de tâche</button>
+  </header>
+  <main>
+
+  </main>
+  <script type="module">
+    import { section } from './section.js'
+    import { task } from './task.js'
+    import { data, createSection, save } from './db.js'
+    import { Category } from './category.js'
+
+    // TODO always call the last after timeout to ensure good results
+    function throttle(func, timeout) {
+      let lastTime = 0
+      return function() {
+        const now = Date.now()
+        if (now - lastTime >= timeout) {
+          func()
+          lastTime = now
+        }
+      }
+    }
+
+    function debounce(func, delay) {
+      let timerId
+      return function() {
+        clearTimeout(timerId)
+        timerId = setTimeout(() => func.apply(this, arguments), !timerId ? 0 : delay)
+      }
+    }
+
+    function indexOfSmallest(tbl) {
+      if (tbl.length === 0) return -1;
+      let lowest = 0;
+      for (let i = 1; i < tbl.length; i++) {
+        if (tbl[i] < tbl[lowest]) lowest = i;
+      }
+      return lowest;
+    }
+
+    const flexLayout = throttle(() => {
+      // TODO add mobile support
+      // remove flex layout
+      if (/Android|webOS|iPhone/i.test(navigator.userAgent)) {
+        return;
+      }
+
+      const sections = document.querySelectorAll('section');
+
+      //if (sections.length === 0) return;
+      //const firstSection = sections[0];
+
+      const windowWidth = window.innerWidth;
+      //const windowHeight = window.innerHeight;
+      const minWindowMargin = 50;
+      const sectionWidth = 240 + 12 * 2 + 2 * 2; //firstSection.style.width + firstSection.style.paddingLeft + firstSection.style.paddingRight + firstSection.style.borderWidth;//240;
+      const sectionMargin = 15;//firstSection.style.marginRight;
+
+      // TODO BETTER compute columns number
+      const cols = Math.floor((windowWidth - minWindowMargin * 2) / (sectionWidth + sectionMargin * 2));
+      const windowMargin = (windowWidth - (cols * (sectionWidth + sectionMargin * 2)) - sectionMargin * 2) / 2;
+
+      // contains the next highest y position for each columns
+      const nextPos = [];
+      for (let i = 0; i < cols; i++) {
+        nextPos[i] = 0;
+      }
+
+      sections.forEach(section => {
+        if (section.style.display === 'none') return;
+
+        // get the next highest position
+        const idx = indexOfSmallest(nextPos);
+        const x = idx * (sectionWidth + sectionMargin * 2) + windowMargin;
+        const y = nextPos[idx];
+
+        const bcr = section.getBoundingClientRect(); // https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect
+        nextPos[idx] = nextPos[idx] + bcr.height + sectionMargin; // compute the next highest position
+
+        section.style.position = 'absolute';
+        section.style.transform = `translate(${x}px, ${y}px)`;
+      })
+    }, 300)
+
+    // TODO
+    function reload() {
+      // d3.select('main')
+      //   .selectAll('section')
+      //   .data(data.sections)
+      //   .join(...section.join)
+      flexLayout()
+      // save()
+    }
+    // reload()
+
+    task.onChange = reload;
+    section.onChange = reload;
+
+    window.createSectionButtonClick = function() {
+      createSection()
+      reload()
+    }
+
+    // UI
+    function hideTasks(value) {
+      d3.selectAll('.task').each((d,i,a) => {
+        if (d.title.toLowerCase().includes(value.toLowerCase())) {
+          a[i].style.display = 'none'
+        } else {
+          a[i].style.display = null
+        }
+      })
+    }
+
+    window.search = function(e) {
+      const value = e.target.value;
+
+      // search in each section the value
+      // if the value is contained in the title, show it
+      // else, hide all task in the section that doesn't contains the value
+      const sections = document.querySelectorAll('.section-title');
+      sections.forEach(sectionTitle => {
+        const section = sectionTitle.closest('section');
+        const sectionIcon = section.querySelector('.section-icon')
+
+        if (!value || value === '' || sectionTitle.value.toLowerCase().includes(value.toLowerCase()) || sectionIcon.textContent.toLowerCase().includes(value.toLowerCase())) {
+          section.style.display = null;
+          section.querySelectorAll('.task').forEach(task => {
+            task.style.display = null;
+          });
+        } else {
+          let ntasks = 0
+
+          section.querySelectorAll('.task').forEach(task => {
+            const taskTitle = task.querySelector('.task-title');
+
+            if (!taskTitle.value.toLowerCase().includes(value.toLowerCase())) {
+              task.style.display = 'none';
+            } else {
+              task.style.display = null;
+              ntasks++;
+            }
+          })
+
+          if (ntasks <= 0) {
+            section.style.display = 'none';
+          } else {
+            section.style.display = null;
+          }
+        }
+      })
+
+      flexLayout();
+    }
+    document.querySelector('#search').value = ''; // why reloading the page doesn't already remove the input value???
+    window.filter = function(value) {
+      document.querySelector('#search').value = value;
+      window.search({ target: { value: value } });
+    }
+
+    // Custom CSS
+    window.addEventListener('resize', flexLayout);
+
+    /*const urlParams = new URLSearchParams(window.location.search);
+    let filterParam = urlParams.get('filter');
+    if (filterParam) {
+      document.querySelector('#search').value = '#'+filterParam;
+    }*/
+
+    async function today() {
+      (await Category.today()).sections()[1].select();
+    }
+
+    // Start
+    document.querySelector('webdav-form').addEventListener('connect', async (e) => {
+      Category.init(e.webdav);
+      const categories = await Category.all(true);
+
+      const sections = categories.map(c => c.sections()).flat().filter(s => s.tasks.length > 0)
+      // console.log(sections)
+
+      d3.select('main')
+        .selectAll('section')
+        .data(sections)
+        .join(...section.join)
+      hideTasks('🪦')
+      flexLayout()
+
+      /*
+      categories.forEach(categoryData => {
+        const categoryElement = Category.createElement(categoryData);
+        nav.insertBefore(categoryElement, btnAddCategory);
+      })
+
+      let goToday = true;
+      if (location.hash) {
+        const split = location.hash.substring(1).split('--');
+        if (split.length === 2) {
+          const categoryTitle = decodeURI(split[0]);
+          const sectionTitle = decodeURI(split[1]);
+
+          // TODO today/urgent/important/...
+
+          const category = categories.find(c => c.title === categoryTitle);
+          if (category) {
+            const section = category.sections().find(s => s.title === sectionTitle);
+            if (section) {
+              section.select();
+              goToday = false;
+            }
+          }
+        }
+      }
+      if (goToday) today();
+      */
+    });
+  </script>
+</body>
+
+</html>
