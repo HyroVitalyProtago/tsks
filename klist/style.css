@@ -249,3 +249,7 @@ input[type="checkbox"] {
   border: none;
   box-shadow: none;
 }
+
+textarea.task-title.inline-input {
+  line-height: 1;
+}
