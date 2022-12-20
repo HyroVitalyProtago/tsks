@@ -401,6 +401,31 @@ class Section {
     return encodeURI(`${this.category.title}--${this.title}`);
   }
 
+  groups() {
+    let groups = [{
+      title: '',
+      children: []
+    }]
+
+    let node = this.#shadowNode.nextSibling;
+    while (node) {
+      if (node.nodeName === 'H1') break;
+      
+      if (node.nodeName === 'H2') { // Group
+        groups.push({
+          title: node.textContent,
+          children: []
+        })
+      } else if (node.nodeName === 'DIV') { // Task
+        groups[groups.length-1].children.push(node.task)
+      }
+
+      node = node.nextSibling;
+    }
+
+    return groups
+  }
+
   select() {
       // TODO only works if category and section title pair is unique...
       const st = nav.scrollTop;

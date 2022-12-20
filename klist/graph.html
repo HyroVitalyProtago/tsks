@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Tsks</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f9f9f9">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="text/javascript" src="webdav.js"></script>
+  <script type="text/javascript" src="js-yaml.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <!-- <link rel="manifest" href="manifest.json"> -->
+</head>
+
+<body>
+  <webdav-form></webdav-form>
+  <header>
+    <nav>
+      <ul>
+        <li title="home" onclick="filter('')"><button>📫 home</button></li>
+        <li title="work" onclick="filter('💼')"><button>💼 work</button></li>
+        <li title="urgent" onclick="filter('🔥')"><button>🔥 urgent</button></li>
+        <li title="important" onclick="filter('🎯')"><button>🎯 important</button></li>
+        <li title="archived" onclick="filter('🪦')"><button>🪦 archived</button></li>
+      </ul>
+    </nav>
+    <input type="search" id="search" placeholder="filtrer (ex: #work, ...)" onkeyup="search(event)" />
+    <button id="createSectionButton" onclick="createSectionButtonClick()" title="Créer une liste de tâche">+ créer une
+      liste de tâche</button>
+  </header>
+  <main>
+
+  </main>
+  <script type="module">
+    import { section } from './section.js'
+    import { task } from './task.js'
+    import { data, createSection, save } from './db.js'
+    import { Category } from './category.js'
+
+    // TODO always call the last after timeout to ensure good results
+    function throttle(func, timeout) {
+      let lastTime = 0
+      return function() {
+        const now = Date.now()
+        if (now - lastTime >= timeout) {
+          func()
+          lastTime = now
+        }
+      }
+    }
+
+    function debounce(func, delay) {
+      let timerId
+      return function() {
+        clearTimeout(timerId)
+        timerId = setTimeout(() => func.apply(this, arguments), !timerId ? 0 : delay)
+      }
+    }
+
+    function indexOfSmallest(tbl) {
+      if (tbl.length === 0) return -1;
+      let lowest = 0;
+      for (let i = 1; i < tbl.length; i++) {
+        if (tbl[i] < tbl[lowest]) lowest = i;
+      }
+      return lowest;
+    }
+
+    const flexLayout = throttle(() => {
+      // TODO add mobile support
+      // remove flex layout
+      if (/Android|webOS|iPhone/i.test(navigator.userAgent)) {
+        return;
+      }
+
+      const sections = document.querySelectorAll('section');
+
+      //if (sections.length === 0) return;
+      //const firstSection = sections[0];
+
+      const windowWidth = window.innerWidth;
+      //const windowHeight = window.innerHeight;
+      const minWindowMargin = 50;
+      const sectionWidth = 240 + 12 * 2 + 2 * 2; //firstSection.style.width + firstSection.style.paddingLeft + firstSection.style.paddingRight + firstSection.style.borderWidth;//240;
+      const sectionMargin = 15;//firstSection.style.marginRight;
+
+      // TODO BETTER compute columns number
+      const cols = Math.floor((windowWidth - minWindowMargin * 2) / (sectionWidth + sectionMargin * 2));
+      const windowMargin = (windowWidth - (cols * (sectionWidth + sectionMargin * 2)) - sectionMargin * 2) / 2;
+
+      // contains the next highest y position for each columns
+      const nextPos = [];
+      for (let i = 0; i < cols; i++) {
+        nextPos[i] = 0;
+      }
+
+      sections.forEach(section => {
+        if (section.style.display === 'none') return;
+
+        // get the next highest position
+        const idx = indexOfSmallest(nextPos);
+        const x = idx * (sectionWidth + sectionMargin * 2) + windowMargin;
+        const y = nextPos[idx];
+
+        const bcr = section.getBoundingClientRect(); // https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect
+        nextPos[idx] = nextPos[idx] + bcr.height + sectionMargin; // compute the next highest position
+
+        section.style.position = 'absolute';
+        section.style.transform = `translate(${x}px, ${y}px)`;
+      })
+    }, 300)
+
+    // TODO
+    function reload() {
+      // d3.select('main')
+      //   .selectAll('section')
+      //   .data(data.sections)
+      //   .join(...section.join)
+      flexLayout()
+      // save()
+    }
+    // reload()
+
+    task.onChange = reload;
+    section.onChange = reload;
+
+    window.createSectionButtonClick = function() {
+      createSection()
+      reload()
+    }
+
+    // UI
+    function hideTasks(value) {
+      d3.selectAll('.task').each((d,i,a) => {
+        if (d.title.toLowerCase().includes(value.toLowerCase())) {
+          a[i].style.display = 'none'
+        } else {
+          a[i].style.display = null
+        }
+      })
+    }
+
+    window.search = function(e) {
+      const value = e.target.value;
+
+      // search in each section the value
+      // if the value is contained in the title, show it
+      // else, hide all task in the section that doesn't contains the value
+      const sections = document.querySelectorAll('.section-title');
+      sections.forEach(sectionTitle => {
+        const section = sectionTitle.closest('section');
+        const sectionIcon = section.querySelector('.section-icon')
+
+        if (!value || value === '' || sectionTitle.value.toLowerCase().includes(value.toLowerCase()) || sectionIcon.textContent.toLowerCase().includes(value.toLowerCase())) {
+          section.style.display = null;
+          section.querySelectorAll('.task').forEach(task => {
+            task.style.display = null;
+          });
+        } else {
+          let ntasks = 0
+
+          section.querySelectorAll('.task').forEach(task => {
+            const taskTitle = task.querySelector('.task-title');
+
+            if (!taskTitle.value.toLowerCase().includes(value.toLowerCase())) {
+              task.style.display = 'none';
+            } else {
+              task.style.display = null;
+              ntasks++;
+            }
+          })
+
+          if (ntasks <= 0) {
+            section.style.display = 'none';
+          } else {
+            section.style.display = null;
+          }
+        }
+      })
+
+      flexLayout();
+    }
+    document.querySelector('#search').value = ''; // why reloading the page doesn't already remove the input value???
+    window.filter = function(value) {
+      document.querySelector('#search').value = value;
+      window.search({ target: { value: value } });
+    }
+
+    // Custom CSS
+    window.addEventListener('resize', flexLayout);
+
+    /*const urlParams = new URLSearchParams(window.location.search);
+    let filterParam = urlParams.get('filter');
+    if (filterParam) {
+      document.querySelector('#search').value = '#'+filterParam;
+    }*/
+
+    // async function today() {
+    //   (await Category.today()).sections()[1].select();
+    // }
+
+    // Start
+    document.querySelector('webdav-form').addEventListener('connect', async (e) => {
+      Category.init(e.webdav);
+      const categories = await Category.all(true);
+
+      // const sections = categories.map(c => c.sections()).flat().filter(s => s.tasks.length > 0)
+      // console.log(sections)
+
+      // d3.select('main')
+      //   .selectAll('section')
+      //   .data(sections)
+      //   .join(...section.join)
+      // hideTasks('🪦')
+      // flexLayout()
+
+      const width = window.innerWidth//192 * 6
+      const dx = 22
+      const dy = width / 7
+      const margin = ({top: 20, right: 120, bottom: 10, left: 80})
+      const tree = d3.tree().nodeSize([dx, dy])
+      const diagonal = d3.linkHorizontal().x(d => d.y).y(d => d.x)
+
+      const data = categories.map(c => {
+        c.name = c.title
+        c.children = (c.sections()).filter(s => s.tasks.length > 0).map(s => {
+          s.name = s.icon + ' ' + s.title
+          const groups = s.groups().map(g => {
+            g.name = g.title;
+            g.children = g.children.map(t => {t.name = t.title;return t})//.filter(t => !t.done)
+            return g
+          })
+          const sectionTasks = groups[0].children
+          groups.shift()
+          s.children = [...sectionTasks, ...groups]
+          return s
+        })
+        return c
+      })
+
+      // console.log(data)
+
+      const root = d3.hierarchy({
+        name: 'Tasks',
+        children: data
+      });
+
+      root.x0 = dy / 2;
+      root.y0 = 0;
+      root.descendants().forEach((d, i) => {
+        d.id = i;
+        d._children = d.children;
+        // if (d.depth && d.data.name.length !== 7) d.children = null;
+      });
+
+      const svg = d3.select('main')
+          .append("svg")
+          .attr("viewBox", [-margin.left, -margin.top, width, dx])
+          // .attr('width', width)
+          // .attr('height', 800)
+          .style("font", "16px sans-serif")
+          .style("user-select", "none");
+
+      const gLink = svg.append("g")
+          .attr("fill", "none")
+          .attr("stroke", "#555")
+          .attr("stroke-opacity", 0.4)
+          .attr("stroke-width", 1.5);
+
+      const gNode = svg.append("g")
+          .attr("cursor", "pointer")
+          .attr("pointer-events", "all");
+
+      function update(source) {
+        const duration = d3.event && d3.event.altKey ? 2500 : 250;
+        const nodes = root.descendants().reverse();
+        const links = root.links();
+
+        // Compute the new tree layout.
+        tree(root);
+
+        let left = root;
+        let right = root;
+        root.eachBefore(node => {
+          if (node.x < left.x) left = node;
+          if (node.x > right.x) right = node;
+        });
+
+        const height = right.x - left.x + margin.top + margin.bottom;
+
+        const transition = svg.transition()
+            .duration(duration)
+            .attr("viewBox", [-margin.left, left.x - margin.top, width, height])
+            .tween("resize", window.ResizeObserver ? null : () => () => svg.dispatch("toggle"));
+
+        // Update the nodes…
+        const node = gNode.selectAll("g")
+          .data(nodes, d => d.id);
+
+        // Enter any new nodes at the parent's previous position.
+        const nodeEnter = node.enter().append("g")
+            .attr("transform", d => `translate(${source.y0},${source.x0})`)
+            .attr("fill-opacity", 0)
+            .attr("stroke-opacity", 0)
+            .on("click", (event, d) => {
+              d.children = d.children ? null : d._children;
+              update(d);
+            });
+
+        nodeEnter.append("circle")
+            .attr("r", 2.5)
+            .attr("fill", d => d._children ? "#555" : d.data.done ? "#6bff90" : "#999")
+            .attr("stroke-width", 10);
+
+        nodeEnter.append("text")
+            .attr("dy", "0.31em")
+            .attr("x", d => d._children ? -6 : 6)
+            .attr("text-anchor", d => d._children ? "end" : "start")
+            .attr("fill", "white")
+            .attr("style", d => d.data.done ? 'text-decoration: line-through 1.5px;text-decoration-color:#6bff90;' : null)
+            .text(d => d.data.name)
+          // .clone(true).lower()
+          //   .attr("stroke-linejoin", "round")
+          //   .attr("stroke-width", 3)
+          //   .attr("stroke", "white");
+
+        // Transition nodes to their new position.
+        const nodeUpdate = node.merge(nodeEnter).transition(transition)
+            .attr("transform", d => `translate(${d.y},${d.x})`)
+            .attr("fill-opacity", 1)
+            .attr("stroke-opacity", 1);
+
+        // Transition exiting nodes to the parent's new position.
+        const nodeExit = node.exit().transition(transition).remove()
+            .attr("transform", d => `translate(${source.y},${source.x})`)
+            .attr("fill-opacity", 0)
+            .attr("stroke-opacity", 0);
+
+        // Update the links…
+        const link = gLink.selectAll("path")
+          .data(links, d => d.target.id);
+
+        // Enter any new links at the parent's previous position.
+        const linkEnter = link.enter().append("path")
+            .attr("d", d => {
+              const o = {x: source.x0, y: source.y0};
+              return diagonal({source: o, target: o});
+            });
+
+        // Transition links to their new position.
+        link.merge(linkEnter).transition(transition)
+            .attr("d", diagonal);
+
+        // Transition exiting nodes to the parent's new position.
+        link.exit().transition(transition).remove()
+            .attr("d", d => {
+              const o = {x: source.x, y: source.y};
+              return diagonal({source: o, target: o});
+            });
+
+        // Stash the old positions for transition.
+        root.eachBefore(d => {
+          d.x0 = d.x;
+          d.y0 = d.y;
+        });
+      }
+
+      update(root);
+
+        // return svg.node();
+    });
+  </script>
+</body>
+
+</html>
